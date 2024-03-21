@@ -7,3 +7,6 @@
 [submodule "contracts/lib/openzeppelin-contracts-upgradeable"]
 	path = contracts/lib/openzeppelin-contracts-upgradeable
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "contracts/dcap-v3-attestation"]
+	path = contracts/dcap-v3-attestation
+	url = https://github.com/automata-network/automata-dcap-v3-attestation
