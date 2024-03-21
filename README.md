@@ -21,7 +21,7 @@ Read this [blog](https://www.notion.so/atanetwork/Elevating-ZK-Security-with-Mul
 ## AVS Task Description
 Task definition: A state transition or computational process seeking to leverage the independent execution within a Trusted Execution Environment (TEE) to ascertain its correctness.
 
-```
+```solidity
 struct StateHeader {
     uint256 identifier;
     bytes metadata;
@@ -48,3 +48,16 @@ The architecture of the AVS contains:
     - TEE prover that prove the final state of a given task, for example, a prover of zk-rollup L2 will execute blocks inside TEE and produce the root state at specific block
 
 ## AVS Workflow
+Below is a detailed diagram of the workflow
+![Automata Multi-Prover AVS Workflow](/assets/avs-workflow.png)
+
+The workflow is divided into two parts:
+- Setup
+    - Follow the [Eigenlayer's doc](https://docs.eigenlayer.xyz/eigenlayer/overview) to stake and register as operator of Multi-prover AVS
+    - Generate attestation and register as TEE prover, attestation and its generating process differs depending on the TEE technology. For example, [dcap-v3-attestation](./contracts/dcap-v3-attestation/) is the contracts of verifying Dcap attestation of Intel SGX
+- Working
+    - Except what operators should do to handle tasks, they must complete liveness challenge periodically, otherwise they will be treated as invalid and their submission will be rejected by the aggregator
+    - Operators fetch new task and finish the calculation inside TEE
+    - Operators sign the final state and send it together with signature to aggregator
+    - Aggregator will fetch operator's validity before accepting its submission
+    - Aggregator aggregate all the BLS signature and submit to the AVS service manager
