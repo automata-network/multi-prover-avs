@@ -68,29 +68,11 @@ contract DeployMultiProverServiceManager is Script {
             proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(indexRegistry)), address(indexRegistryImpl));
             proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(blsApkRegistry)), address(blsApkRegistryImpl));
             proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(stakeRegistry)), address(stakeRegistryImpl));            
-        }
+        }        
 
-        // Deploy and initialize MultiProverServiceManager
-        IMultiProverServiceManager multiProverServiceManager;
-        {
-            multiProverServiceManager = IMultiProverServiceManager(
-                address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
-            );
-            // Upgrade and initialize MultiProverServiceManager
-            address avsDirectory = vm.envAddress("AVS_DIRECTORY");
-            IMultiProverServiceManager multiProverServiceManagerImpl = new MultiProverServiceManager(IAVSDirectory(avsDirectory), registryCoordinator, stakeRegistry);
-            proxyAdmin.upgradeAndCall(
-                ITransparentUpgradeableProxy(address(multiProverServiceManager)), 
-                address(multiProverServiceManagerImpl),
-                abi.encodeWithSelector(
-                    MultiProverServiceManager.initialize.selector,
-                    pauserRegistry,
-                    0,
-                    msg.sender,
-                    msg.sender
-                )
-            );
-        }
+        IMultiProverServiceManager multiProverServiceManager = IMultiProverServiceManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
         
         // Deploy registryCoordinator implementation and initialize
         IRegistryCoordinator registryCoordinatorImpl = new RegistryCoordinator(multiProverServiceManager, stakeRegistry, blsApkRegistry, indexRegistry);              
@@ -105,7 +87,7 @@ contract DeployMultiProverServiceManager is Script {
             minimumStakeForQuourm[0] = uint96(1);
             IStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers = new IStakeRegistry.StrategyParams[][](1);
             {
-                StrategyBaseTVLLimits deployedStrategy = StrategyBaseTVLLimits(vm.envAddress("STRATEGY"));
+                StrategyBaseTVLLimits deployedStrategy = StrategyBaseTVLLimits(vm.envAddress("STRATEGY_MANAGER"));
                 strategyAndWeightingMultipliers[0] = new IStakeRegistry.StrategyParams[](1);
                 strategyAndWeightingMultipliers[0][0] = IStakeRegistry.StrategyParams({
                     strategy: IStrategy(address(deployedStrategy)),
@@ -133,6 +115,34 @@ contract DeployMultiProverServiceManager is Script {
             );
         }
 
+        // Upgrade and initialize MultiProverServiceManager
+        {
+            address avsDirectory = vm.envAddress("AVS_DIRECTORY");
+            IMultiProverServiceManager multiProverServiceManagerImpl = new MultiProverServiceManager(IAVSDirectory(avsDirectory), registryCoordinator, stakeRegistry);
+            proxyAdmin.upgradeAndCall(
+                ITransparentUpgradeableProxy(address(multiProverServiceManager)), 
+                address(multiProverServiceManagerImpl),
+                abi.encodeWithSelector(
+                    MultiProverServiceManager.initialize.selector,
+                    pauserRegistry,
+                    0,
+                    msg.sender,
+                    msg.sender
+                )
+            );
+        }
+
         vm.stopBroadcast();
+
+        string memory output = "multi-prover avs contracts deployment output";
+        vm.serializeAddress(output, "indexRegistry", address(indexRegistry));
+        vm.serializeAddress(output, "blsApkRegistry", address(blsApkRegistry));
+        vm.serializeAddress(output, "stakeRegistry", address(stakeRegistry));
+        vm.serializeAddress(output, "registryCoordinator", address(registryCoordinator));
+        vm.serializeAddress(output, "multiProverServiceManager", address(multiProverServiceManager));
+
+        string memory outputFilePath = string.concat(vm.projectRoot(), "/script/output/avs_deploy_output.json");
+        string memory finalJson = vm.serializeString(output, "object", output);
+        vm.writeJson(finalJson, outputFilePath);
     }
 }

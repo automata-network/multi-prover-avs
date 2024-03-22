@@ -1,0 +1,22 @@
+{
+  "avsDirectory": "0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991",
+  "avsDirectoryImplementation": "0x4045733D00C2CDAF22630Aef40Ed83B923fbE3D7",
+  "baseStrategyImplementation": "0xd45Bd4683D002b5E2D0C2b778f7BfB739750cCeC",
+  "delayedWithdrawalRouter": "0x77311cA0051cA1c5A0d34104b55d9f1C7255f1de",
+  "delayedWithdrawalRouterImplementation": "0xbf321d3ed743ebB83030E58dB9De4AD00DFe8e6d",
+  "delegationManager": "0xE10C223Bb7c78EEC054a35CeEC92D3D47fe17Cb6",
+  "delegationManagerImplementation": "0xd2048DF20F2B998Bf752A03D4b3f2FF3Ab7e7952",
+  "eigenLayerPauserRegistry": "0x711BCa080e59Cc2b1a71B1D86b3199991595197A",
+  "eigenLayerProxyAdmin": "0x7Da0fc382621A3f50b7725293Bc8318A55a09a55",
+  "eigenPodBeacon": "0x6a5a44B8359658c447A90B705526cB70627Dca35",
+  "eigenPodImplementation": "0xF350B0937bc1e594a4e3dD8cD99f77275A9Aa62D",
+  "eigenPodManager": "0x743207ecc2523052d1736825cAf44C7Ed7BEfcf5",
+  "eigenPodManagerImplementation": "0xAA914BA4B22A899fA3eb00BC28E1dEf868AA9f24",
+  "object": "eigenlayer contracts deployment output",
+  "slasher": "0x944669dFE8A18121aA121018788C0dA7b25DCb4f",
+  "slasherImplementation": "0x4dbDC0E367AC7a7501561EDfba1f660Ce85B3C26",
+  "strategyBaseTVLLimits": "0x68218aE11C6372E5366E8e1cE740eB8a695D8535",
+  "strategyManager": "0xBBcbb421c5422963BAb2E964ff7374868494fdDF",
+  "strategyManagerImplementation": "0x6cd70D1117657b89De41E9453ada2E3d8fEd9FF8",
+  "underlayingToken": "0x0abdE5C021e959979277D2c8A7DDB9aF07772366"
+}
