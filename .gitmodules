@@ -10,3 +10,10 @@
 [submodule "contracts/dcap-v3-attestation"]
 	path = contracts/dcap-v3-attestation
 	url = https://github.com/automata-network/automata-dcap-v3-attestation
+[submodule "contracts/lib/forge-std"]
+	path = contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "sgx-prover"]
+	path = sgx-prover
+	url = git@github.com:automata-network/sgx-prover.git
+	branch = avs
