@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
-	"github.com/automata-network/multi-prover-avs/contracts/bindings"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -32,8 +30,6 @@ type Poe struct {
 	PrevStateRoot  common.Hash
 	NewStateRoot   common.Hash
 	WithdrawalRoot common.Hash
-
-	// signature
 }
 
 func (p *Poe) Pack() []byte {
@@ -44,15 +40,20 @@ func (p *Poe) Pack() []byte {
 	return data
 }
 
-type StateHeader struct {
-	StateHeader *bindings.StateHeader
-	Signature   bls.Signature
-	Pubkey      hexutil.Bytes
+func (p *ProverClient) GenerateAttestaionReport(ctx context.Context, pubkey hexutil.Bytes) (hexutil.Bytes, error) {
+	if len(pubkey) != 64 {
+		return nil, logex.NewErrorf("invalid pubkey")
+	}
+	var attestationReport hexutil.Bytes
+	if err := p.client.CallContext(ctx, &attestationReport, "generateAttestationReport", pubkey); err != nil {
+		return nil, logex.Trace(err)
+	}
+	return attestationReport, nil
 }
 
-func (p *ProverClient) GetStateHeader(ctx context.Context, blockNumber uint64) (*StateHeader, error) {
-	var result *StateHeader
-	if err := p.client.CallContext(ctx, &result, "getStateHeader", blockNumber); err != nil {
+func (p *ProverClient) GetPoe(ctx context.Context, blockNumber uint64) (*Poe, error) {
+	var result *Poe
+	if err := p.client.CallContext(ctx, &result, "getPoe", blockNumber); err != nil {
 		return nil, logex.Trace(err)
 	}
 	return result, nil

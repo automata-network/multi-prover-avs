@@ -2,6 +2,7 @@ package aggregator
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -25,35 +26,43 @@ func NewClient(endpoint string) (*Client, error) {
 	}, nil
 }
 
-type StateHeader struct {
-	StateHeader *bindings.StateHeader
-	Signature   bls.Signature
+type StateHeaderRequest struct {
+	StateHeader *StateHeader
+	Signature   *bls.Signature
 	Pubkey      hexutil.Bytes
 	OperatorId  types.OperatorId
 }
 
+type StateHeader struct {
+	Identifier                 *hexutil.Big  `json:"identifier"`
+	Metadata                   hexutil.Bytes `json:"metadata"`
+	State                      hexutil.Bytes `json:"state"`
+	QuorumNumbers              hexutil.Bytes `json:"quorum_numbers"`
+	QuorumThresholdPercentages hexutil.Bytes `json:"quorum_threshold_percentages"`
+	ReferenceBlockNumber       uint32        `json:"reference_blocknumber"`
+}
+
+func (s *StateHeader) ToAbi() *bindings.StateHeader {
+	return &bindings.StateHeader{
+		Identifier:                 new(big.Int).Set((*big.Int)(s.Identifier)),
+		Metadata:                   []byte(s.Metadata),
+		State:                      []byte(s.State),
+		QuorumNumbers:              []byte(s.QuorumNumbers),
+		QuorumThresholdPercentages: []byte(s.QuorumThresholdPercentages),
+		ReferenceBlockNumber:       s.ReferenceBlockNumber,
+	}
+}
+
 func (s *StateHeader) Digest() (types.TaskResponseDigest, error) {
-	digest, err := bindings.PackStateHeader(s.StateHeader)
+	digest, err := bindings.DigestStateHeader(s.ToAbi())
 	if err != nil {
 		return types.TaskResponseDigest{}, logex.Trace(err)
 	}
-	return types.TaskResponseDigest(digest), nil
+
+	return digest, nil
 }
 
-func (c *Client) SubmitStateHeader(ctx context.Context, state *StateHeader) error {
-	pubkey := (&bls.G2Point{}).Deserialize(state.Pubkey)
-	digest, err := state.Digest()
-	if err != nil {
-		return logex.Trace(err)
-	}
-	pass, err := state.Signature.Verify(pubkey, digest)
-	if err != nil {
-		return logex.Trace(err)
-	}
-	if !pass {
-		return logex.NewErrorf("signature validation failed")
-	}
-
+func (c *Client) SubmitStateHeader(ctx context.Context, state *StateHeaderRequest) error {
 	var result bool
 	if err := c.client.CallContext(ctx, &result, "aggregator_submitStateHeader", state); err != nil {
 		return logex.Trace(err)

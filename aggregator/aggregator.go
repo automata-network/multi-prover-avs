@@ -15,7 +15,6 @@ import (
 	blsagg "github.com/Layr-Labs/eigensdk-go/services/bls_aggregation"
 	oppubkeysserv "github.com/Layr-Labs/eigensdk-go/services/operatorpubkeys"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/automata-network/multi-prover-avs/contracts/bindings"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/SGXVerifier"
 	"github.com/chzyer/logex"
@@ -58,11 +57,11 @@ type Aggregator struct {
 }
 
 type Task struct {
-	state *StateHeader
+	state *StateHeaderRequest
 	index uint32
 }
 
-func NewAggregator(cfg *Config, ctx context.Context) (*Aggregator, error) {
+func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	ecdsaPrivateKey, err := crypto.HexToECDSA(cfg.EcdsaPrivateKey)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -175,19 +174,16 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 	}
 }
 
-func (agg *Aggregator) submitStateHeader(ctx context.Context, stateHeader *StateHeader) error {
-	data, err := bindings.PackStateHeader(stateHeader.StateHeader)
+func (agg *Aggregator) submitStateHeader(ctx context.Context, req *StateHeaderRequest) error {
+	digest, err := req.StateHeader.Digest()
 	if err != nil {
 		return logex.Trace(err)
 	}
 	agg.taskMutex.Lock()
-
-	digest := types.TaskResponseDigest(crypto.Keccak256Hash(data))
-
 	task, ok := agg.taskIndexMap[digest]
 	if !ok {
 		task = &Task{
-			state: stateHeader,
+			state: req,
 			index: agg.taskIndexSeq,
 		}
 		agg.taskIndexMap[digest] = task
@@ -197,7 +193,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, stateHeader *State
 
 	if !ok {
 		timeToExpiry := time.Duration(agg.cfg.TimeToExpirySecs) * time.Second
-		sh := stateHeader.StateHeader
+		sh := req.StateHeader
 		quorumNumbers := make([]types.QuorumNum, len(sh.QuorumNumbers))
 		quorumThresholdPercentages := make([]types.QuorumThresholdPercentage, len(sh.QuorumThresholdPercentages))
 		for i, qn := range sh.QuorumNumbers {
@@ -208,7 +204,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, stateHeader *State
 		}
 		err = agg.blsAggregationService.InitializeNewTask(task.index, sh.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
 	} else {
-		err = agg.blsAggregationService.ProcessNewSignature(ctx, task.index, digest, &stateHeader.Signature, stateHeader.OperatorId)
+		err = agg.blsAggregationService.ProcessNewSignature(ctx, task.index, digest, req.Signature, req.OperatorId)
 	}
 	return err
 }
@@ -237,7 +233,7 @@ func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServic
 		NonSignerStakeIndices:        blsAggServiceResp.NonSignerStakeIndices,
 	}
 
-	tx, err := agg.multiProverContract.ConfirmState(agg.transactOpt, *task.state.StateHeader, nonSignerStakesAndSignature)
+	tx, err := agg.multiProverContract.ConfirmState(agg.transactOpt, *task.state.StateHeader.ToAbi(), nonSignerStakesAndSignature)
 	if err != nil {
 		return logex.Trace(err)
 	}

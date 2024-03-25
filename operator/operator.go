@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
-	"github.com/Layr-Labs/eigensdk-go/nodeapi"
 	"github.com/automata-network/multi-prover-avs/aggregator"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/SGXVerifier"
+	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -25,6 +27,8 @@ import (
 type Config struct {
 	ProverURL     string
 	AggregatorURL string
+
+	SGXVerifierAddr common.Address
 
 	TaskFetcher *TaskFetcher
 
@@ -46,11 +50,10 @@ type TaskFetcher struct {
 }
 
 type Operator struct {
-	cfg      *Config
-	nodeApi  *nodeapi.NodeApi
-	keyPair  *bls.KeyPair
-	ecdsaKey *ecdsa.PrivateKey
-	logger   *logex.Logger
+	cfg        *Config
+	blsKeyPair *bls.KeyPair
+	ecdsaKey   *ecdsa.PrivateKey
+	logger     *logex.Logger
 
 	aggregator *aggregator.Client
 
@@ -60,6 +63,9 @@ type Operator struct {
 	proverClient *ProverClient
 	eigenClients *clients.Clients
 	taskFetcher  *LogTracer
+
+	ethclient   *ethclient.Client
+	sgxVerifier *SGXVerifier.SGXVerifier
 }
 
 func NewOperator(cfg *Config) (*Operator, error) {
@@ -94,33 +100,47 @@ func NewOperator(cfg *Config) (*Operator, error) {
 		return nil, logex.Trace(err)
 	}
 
-	operatorId, err := eigenClients.AvsRegistryChainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+	operatorId, err := eigenClients.AvsRegistryChainReader.GetOperatorId(nil, operatorAddress)
 	if err != nil {
 		logger.Error("Cannot get operator id", "err", err)
 		return nil, err
 	}
 
+	client, err := ethclient.Dial(cfg.EthRpcUrl)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	sgxVerifier, err := SGXVerifier.NewSGXVerifier(cfg.SGXVerifierAddr, client)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+
 	operator := &Operator{
 		operatorId:   operatorId,
-		keyPair:      kp,
+		blsKeyPair:   kp,
 		proverClient: proverClient,
 		logger:       logger,
 		eigenClients: eigenClients,
 		ecdsaKey:     ecdsaPrivateKey,
+		sgxVerifier:  sgxVerifier,
+		ethclient:    client,
 	}
 
-	client, err := ethclient.Dial(cfg.TaskFetcher.Endpoint)
-	if err != nil {
-		return nil, logex.Trace(err)
+	if cfg.TaskFetcher != nil {
+		taskFetcherClient, err := ethclient.Dial(cfg.TaskFetcher.Endpoint)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+
+		operator.taskFetcher = NewLogTracer(taskFetcherClient, &LogTracerConfig{
+			Id:        "operator-log-tracer",
+			Wait:      5,
+			Max:       100,
+			Topics:    cfg.TaskFetcher.Topics,
+			Addresses: cfg.TaskFetcher.Addresses,
+			Handler:   operator,
+		})
 	}
-	operator.taskFetcher = NewLogTracer(client, &LogTracerConfig{
-		Id:        "operator-log-tracer",
-		Wait:      5,
-		Max:       100,
-		Topics:    cfg.TaskFetcher.Topics,
-		Addresses: cfg.TaskFetcher.Addresses,
-		Handler:   operator,
-	})
 
 	return operator, nil
 }
@@ -139,16 +159,31 @@ func (o *Operator) SaveBlock(uint64) error {
 func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	// parse the task
 	blockNumber := new(big.Int).SetBytes(log.Data[:32])
-	stateHeader, err := o.proverClient.GetStateHeader(ctx, uint64(blockNumber.Int64()))
+	poe, err := o.proverClient.GetPoe(ctx, uint64(blockNumber.Int64()))
 	if err != nil {
 		return logex.Trace(err)
 	}
+	stateHeader := &aggregator.StateHeader{
+		Identifier:                 (*hexutil.Big)(big.NewInt(1)),
+		Metadata:                   nil,
+		State:                      poe.Pack(),
+		QuorumNumbers:              []byte{0},
+		QuorumThresholdPercentages: []byte{0},
+		ReferenceBlockNumber:       0, // TODO: fixme
+	}
+
+	digest, err := stateHeader.Digest()
+	if err != nil {
+		return logex.Trace(err)
+	}
+	sig := o.blsKeyPair.SignMessage(digest)
+	pubkey := o.blsKeyPair.PubKey.Serialize()
 
 	// submit to aggregator
-	if err := o.aggregator.SubmitStateHeader(ctx, &aggregator.StateHeader{
-		StateHeader: stateHeader.StateHeader,
-		Signature:   stateHeader.Signature,
-		Pubkey:      stateHeader.Pubkey,
+	if err := o.aggregator.SubmitStateHeader(ctx, &aggregator.StateHeaderRequest{
+		StateHeader: stateHeader,
+		Signature:   sig,
+		Pubkey:      pubkey,
 		OperatorId:  o.operatorId,
 	}); err != nil {
 		return logex.Trace(err)
@@ -164,12 +199,15 @@ func (o *Operator) Start(ctx context.Context) error {
 	if err := o.RegisterOperatorWithAvs(ctx); err != nil {
 		return logex.Trace(err)
 	}
+	if err := o.RegisterAttestationReport(ctx); err != nil {
+		return logex.Trace(err)
+	}
 
 	o.logger.Infof("Start Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v",
 		o.operatorId,
 		o.operatorAddress,
-		o.keyPair.GetPubKeyG1(),
-		o.keyPair.GetPubKeyG2(),
+		o.blsKeyPair.GetPubKeyG1(),
+		o.blsKeyPair.GetPubKeyG2(),
 	)
 
 	if err := o.checkIsRegistered(); err != nil {
@@ -185,12 +223,51 @@ func (o *Operator) Start(ctx context.Context) error {
 }
 
 func (o *Operator) checkIsRegistered() error {
-	operatorIsRegistered, err := o.eigenClients.AvsRegistryChainReader.IsOperatorRegistered(&bind.CallOpts{}, o.operatorAddress)
+	operatorIsRegistered, err := o.eigenClients.AvsRegistryChainReader.IsOperatorRegistered(nil, o.operatorAddress)
 	if err != nil {
 		return logex.Trace(err)
 	}
 	if !operatorIsRegistered {
 		return logex.NewErrorf("operator is not registered. Registering operator using the operator-cli before starting operator")
+	}
+	return nil
+}
+
+func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
+	pubkeyBytes := o.blsKeyPair.PubKey.Serialize()
+	if len(pubkeyBytes) != 64 {
+		return logex.NewErrorf("invalid pubkey")
+	}
+	var x, y [32]byte
+	copy(x[:], pubkeyBytes[:32])
+	copy(y[:], pubkeyBytes[32:64])
+	isRegistered, err := o.sgxVerifier.IsProverRegistered(nil, x, y)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	if isRegistered {
+		return nil
+	}
+
+	report, err := o.proverClient.GenerateAttestaionReport(ctx, pubkeyBytes)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	chainId, err := o.ethclient.ChainID(ctx)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	opt, err := bind.NewKeyedTransactorWithChainID(o.ecdsaKey, chainId)
+	if err != nil {
+		return logex.Trace(err)
+	}
+
+	tx, err := o.sgxVerifier.Register(opt, report)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	if _, err := utils.WaitTx(ctx, o.ethclient, tx, nil); err != nil {
+		return logex.Trace(err)
 	}
 	return nil
 }
@@ -218,7 +295,7 @@ func (o *Operator) RegisterOperatorWithAvs(ctx context.Context) error {
 	operatorToAvsRegistrationSigExpiry := big.NewInt(time.Now().Unix() + sigValidForSeconds)
 
 	_, err := o.eigenClients.AvsRegistryChainWriter.RegisterOperatorInQuorumWithAVSRegistryCoordinator(
-		ctx, o.ecdsaKey, operatorToAvsRegistrationSigSalt, operatorToAvsRegistrationSigExpiry, o.keyPair, quorumNumbers, socket,
+		ctx, o.ecdsaKey, operatorToAvsRegistrationSigSalt, operatorToAvsRegistrationSigExpiry, o.blsKeyPair, quorumNumbers, socket,
 	)
 	if err != nil {
 		return logex.Trace(err)

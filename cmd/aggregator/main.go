@@ -11,7 +11,11 @@ func main() {
 	cfg := &aggregator.Config{
 		ListenAddr: ":12345",
 	}
-	agg := aggregator.NewAggregator(cfg)
+	ctx := context.Background()
+	agg, err := aggregator.NewAggregator(ctx, cfg)
+	if err != nil {
+		logex.Fatal(err)
+	}
 	if err := agg.Start(context.Background()); err != nil {
 		logex.Fatal(err)
 	}
