@@ -51,9 +51,9 @@ func (p *ProverClient) GenerateAttestaionReport(ctx context.Context, pubkey hexu
 	return attestationReport, nil
 }
 
-func (p *ProverClient) GetPoe(ctx context.Context, blockNumber uint64) (*Poe, error) {
+func (p *ProverClient) GetPoe(ctx context.Context, tx_hash common.Hash) (*Poe, error) {
 	var result *Poe
-	if err := p.client.CallContext(ctx, &result, "getPoe", blockNumber); err != nil {
+	if err := p.client.CallContext(ctx, &result, "getPoe", tx_hash); err != nil {
 		return nil, logex.Trace(err)
 	}
 	return result, nil
