@@ -16,6 +16,9 @@ Read this [blog](https://www.notion.so/atanetwork/Elevating-ZK-Security-with-Mul
 │ ├── <a href="./contracts/dcap-v3-attestation/">dcap-v3-attestation</a>: On-chain verification library for Dcap attestation of Intel SGX.
 │ ├── <a href="./contracts/src/">src</a>: Source files for AVS contracts.
 │ └── <a href="./contracts/test/">test</a>: Tests for smart contracts.
+├── <a href="./operator/">operator</a>: The operator implementation.
+├── <a href="./aggregator/">aggregator</a>: The aggregator implementation.
+├── <a href="https://github.com/automata-network/sgx-prover/tree/avs">sgx-prover</a>: the sgx version of TEE prover.
 </pre>
 
 ## AVS Task Description
@@ -45,6 +48,8 @@ The architecture of the AVS contains:
     - Aggregate the BLS signatures from operators and submit the aggregated state to AVS
     - Interact with the Automata attestation layer to check the validity of each prover(operator), those who failed to pass the attestation verification or liveness challenge will be rejected to handle tasks until they are valid again.
 - Operator
+    - Fetch state proofs from TEE prover and submit it to the aggregator
+- TEE prover
     - TEE prover that prove the final state of a given task, for example, a prover of zk-rollup L2 will execute blocks inside TEE and produce the root state at specific block
 
 ## AVS Workflow
