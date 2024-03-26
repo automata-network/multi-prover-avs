@@ -28,7 +28,23 @@ contract DeployMultiProverServiceManager is Script {
     function setUp() public {}
 
     function run() public {
-         vm.startBroadcast();
+        vm.startBroadcast();
+
+        // These are deployed strategies used by EigenDA, we will also use them for multi-prover AVS
+        address[] memory quorum0Strategies = new address[](11);
+        {
+            quorum0Strategies[0] = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0; // Virtual strategy for beacon chain ETH
+            quorum0Strategies[1] = 0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3; // stETH strategy
+            quorum0Strategies[2] = 0x3A8fBdf9e77DFc25d09741f51d3E181b25d0c4E0; // rETH strategy
+            quorum0Strategies[3] = 0x05037A81BD7B4C9E0F7B430f1F2A22c31a2FD943; // lsETH strategy
+            quorum0Strategies[4] = 0x9281ff96637710Cd9A5CAcce9c6FAD8C9F54631c; // sfrxETH strategy
+            quorum0Strategies[5] = 0x31B6F59e1627cEfC9fA174aD03859fC337666af7; // ETHx strategy
+            quorum0Strategies[6] = 0x46281E3B7fDcACdBa44CADf069a94a588Fd4C6Ef; // osETH strategy
+            quorum0Strategies[7] = 0x70EB4D3c164a6B4A5f908D4FBb5a9cAfFb66bAB6; // cbETH strategy
+            quorum0Strategies[8] = 0xaccc5A86732BE85b5012e8614AF237801636F8e5; // mETH strategy
+            quorum0Strategies[9] = 0x7673a47463F80c6a3553Db9E54c8cDcd5313d0ac; // ankrETH strategy
+            quorum0Strategies[10] = 0x80528D6e9A2BAbFc766965E0E26d5aB08D9CFaF9; // WETH strategy
+        }
 
         EmptyContract emptyContract = new EmptyContract();
         ProxyAdmin proxyAdmin = new ProxyAdmin();
@@ -77,22 +93,28 @@ contract DeployMultiProverServiceManager is Script {
         // Deploy registryCoordinator implementation and initialize
         IRegistryCoordinator registryCoordinatorImpl = new RegistryCoordinator(multiProverServiceManager, stakeRegistry, blsApkRegistry, indexRegistry);              
         {
-            // Upgrade and initialize RegistryCoordinator                        
-            // 1 quorum, max 10 operator
-            // 1.1 times the stake of original operators to kick it out
-            // and the stake of original stackers should be less than 10% of the total stake
+            // Upgrade and initialize RegistryCoordinator
+            // Quorum config:                      
+            //      - max 10 operator
+            //      - minimum stake is 32 ETH/LST
+            //      - 1.1 times the stake of original operators to kick it out
+            //      - the stake of original stackers should be less than 5% of the total stake
             IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams = new IRegistryCoordinator.OperatorSetParam[](1);
-            operatorSetParams[0] = IRegistryCoordinator.OperatorSetParam(uint32(10), uint16(11000), uint16(1000));
+            operatorSetParams[0] = IRegistryCoordinator.OperatorSetParam(uint32(10), uint16(11000), uint16(500));
             uint96[] memory minimumStakeForQuourm = new uint96[](1);
-            minimumStakeForQuourm[0] = uint96(1);
+            minimumStakeForQuourm[0] = uint96(32000000000000000000);
             IStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers = new IStakeRegistry.StrategyParams[][](1);
             {
-                StrategyBaseTVLLimits deployedStrategy = StrategyBaseTVLLimits(vm.envAddress("STRATEGY_MANAGER"));
-                strategyAndWeightingMultipliers[0] = new IStakeRegistry.StrategyParams[](1);
-                strategyAndWeightingMultipliers[0][0] = IStakeRegistry.StrategyParams({
-                    strategy: IStrategy(address(deployedStrategy)),
-                    multiplier: 1 ether
-                });
+                // address strategyManager = vm.envAddress("STRATEGY_MANAGER");
+                // Same weight for all strategies
+                strategyAndWeightingMultipliers[0] = new IStakeRegistry.StrategyParams[](quorum0Strategies.length);
+                for (uint i = 0; i < quorum0Strategies.length; i++) {
+                    // StrategyBaseTVLLimits strategy = StrategyBaseTVLLimits(strategyManager);
+                    strategyAndWeightingMultipliers[0][i] = IStakeRegistry.StrategyParams({
+                        strategy: IStrategy(quorum0Strategies[i]),
+                        multiplier: 1 ether
+                    });
+                }
             }
             bytes memory callData;
             {
