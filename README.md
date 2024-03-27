@@ -55,7 +55,45 @@ The architecture of the AVS contains:
 ## AVS Workflow
 Below is a detailed diagram of the workflow
 
-[![](https://mermaid.ink/img/pako:eNp1VMGOmzAQ_ZURl6Zq8gMcVqIsrVYKJd1E2wsXBybEDdjUNqnQav-9M4Zkk4XewH4z89688bwGhS4xCAOLfzpUBT5KURnR5ApAdE6rrtmj4T-AVhgnC9kK5SADYSFr0QinZ64jvo6qymA1D0hiRiSyQlWLHg3EWjkjCmen2JShaVc7uWqNPhM4etlOYWuG7ZIE1vKMCq295pzh58tHzqF1wkmt7urn6od2CL5UtlyHV6FAeqQlHIfkKls9PCRxCM-c5YQgVDkiKNDpGc4ccZvvQjVX9zWjeAYEiw0aqUtZiLruP-eq1rqFhCJ6qC-Yoi9qHAplIXynQ0qCd1KfsdXGXclsu30j3YAQdxD4K90R2m5_wn5hPezCZWO0PhCFNeX4wmxfiNqhn6mzOPubmwsKi2KKuwlLTaJI1XnoYWq2slI8dh9xP5Mr-8lVx_2L0bj4KKSaAnbxV39Ip6s1m-Y6o8gvTvdIwheD0FEUIVJhTuCOZMroxAXBsyO8Hix9j6TyuI8moCr9NE3mibp3lqoCbog3a3DrG7riCE7Yk28DNaToanZPKitL5OEeXIvGFHTmU3i4pZ4J0oSjVTvKw61ejVM6ZB8kwL4f5wvNU8kgr3iAXOR-snAWtSyl62F0cWr_wCabhrBsUTt4svDCR_5pbvxbGElR3C9Bk8fkxbgr8F2GHWil1wl9l3pFl3dwrC0Ctfp_BTN2_TfyQiBrgmXQoGmELGn9vfKOyANyscE8COmzxIOg95sHuXojKC_Dba-KIHSmw2XQtSXVH7dlEB4E1V4GSMq1SYeV6jfr2z84HOKq?type=jpg)](https://mermaid.live/edit#pako:eNp1VMGOmzAQ_ZURl6Zq8gMcVqIsrVYKJd1E2wsXBybEDdjUNqnQav-9M4Zkk4XewH4z89688bwGhS4xCAOLfzpUBT5KURnR5ApAdE6rrtmj4T-AVhgnC9kK5SADYSFr0QinZ64jvo6qymA1D0hiRiSyQlWLHg3EWjkjCmen2JShaVc7uWqNPhM4etlOYWuG7ZIE1vKMCq295pzh58tHzqF1wkmt7urn6od2CL5UtlyHV6FAeqQlHIfkKls9PCRxCM-c5YQgVDkiKNDpGc4ccZvvQjVX9zWjeAYEiw0aqUtZiLruP-eq1rqFhCJ6qC-Yoi9qHAplIXynQ0qCd1KfsdXGXclsu30j3YAQdxD4K90R2m5_wn5hPezCZWO0PhCFNeX4wmxfiNqhn6mzOPubmwsKi2KKuwlLTaJI1XnoYWq2slI8dh9xP5Mr-8lVx_2L0bj4KKSaAnbxV39Ip6s1m-Y6o8gvTvdIwheD0FEUIVJhTuCOZMroxAXBsyO8Hix9j6TyuI8moCr9NE3mibp3lqoCbog3a3DrG7riCE7Yk28DNaToanZPKitL5OEeXIvGFHTmU3i4pZ4J0oSjVTvKw61ejVM6ZB8kwL4f5wvNU8kgr3iAXOR-snAWtSyl62F0cWr_wCabhrBsUTt4svDCR_5pbvxbGElR3C9Bk8fkxbgr8F2GHWil1wl9l3pFl3dwrC0Ctfp_BTN2_TfyQiBrgmXQoGmELGn9vfKOyANyscE8COmzxIOg95sHuXojKC_Dba-KIHSmw2XQtSXVH7dlEB4E1V4GSMq1SYeV6jfr2z84HOKq)
+```mermaid
+sequenceDiagram
+  autonumber
+    participant O as Operator
+    participant A as Aggregator
+    participant EC as Eigenlayer Contracts
+    participant M as Multi-prover AVS
+    participant L as TEE Liveness Contract
+    participant AC as Attestation Contracts
+ 
+Note over O,L: Operator registration
+O->>EC: Restake and register to Multi-prover AVS
+O->>L: Operator Liveness
+Note over O,AC: Operator Liveness (Periodically)
+loop Every liveness cycle
+O->>O: Generate Attestation Report
+O->>L: Submit Attesatation Report with pubkey(submitLivenessProof)
+L->>+AC: Verify Attestation Report(verifyAttestation)
+AC->>AC: Verify MrEncalve and MrSigner
+AC->>AC: Verify QE Report
+AC->>AC: Verify Quote CertChain
+AC->>AC: Verify TCB
+AC-->>-L: Return reportData(pubkey)
+L->>L: Mark the operator(pubkey) as attested within the liveness cycle
+end
+ 
+Note over O,L: Proving state
+O-->>O: Fetch task and calculate inside TEE
+O->>A: Provide state and signature(submitTask)
+A-->>EC: Fetch pubkey by OperaterId
+A->>L: Fetch operator's validity (verifyLivenessProof)
+L-->>A: Operator's validity
+alt Is Valid TEE Prover
+A-->>A: Wait and aggregate signatures
+A->>M: Submit state and aggregated signatures
+else Not Valid TEE Prover
+A-->>O: Reject
+end
+```
 
 Components:
 - [Operator](./operator)
