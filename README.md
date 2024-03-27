@@ -16,6 +16,9 @@ Read this [blog](https://www.notion.so/atanetwork/Elevating-ZK-Security-with-Mul
 │ ├── <a href="./contracts/dcap-v3-attestation/">dcap-v3-attestation</a>: On-chain verification library for Dcap attestation of Intel SGX.
 │ ├── <a href="./contracts/src/">src</a>: Source files for AVS contracts.
 │ └── <a href="./contracts/test/">test</a>: Tests for smart contracts.
+├── <a href="./operator/">operator</a>: The operator implementation.
+├── <a href="./aggregator/">aggregator</a>: The aggregator implementation.
+├── <a href="https://github.com/automata-network/sgx-prover/tree/avs">sgx-prover</a>: the sgx version of TEE prover.
 </pre>
 
 ## AVS Task Description
@@ -45,11 +48,21 @@ The architecture of the AVS contains:
     - Aggregate the BLS signatures from operators and submit the aggregated state to AVS
     - Interact with the Automata attestation layer to check the validity of each prover(operator), those who failed to pass the attestation verification or liveness challenge will be rejected to handle tasks until they are valid again.
 - Operator
+    - Fetch state proofs from TEE prover and submit it to the aggregator
+- TEE prover
     - TEE prover that prove the final state of a given task, for example, a prover of zk-rollup L2 will execute blocks inside TEE and produce the root state at specific block
 
 ## AVS Workflow
 Below is a detailed diagram of the workflow
-![Automata Multi-Prover AVS Workflow](/assets/avs-workflow.png)
+
+[![](https://mermaid.ink/img/pako:eNp1VMGOmzAQ_ZURl6Zq8gMcVqIsrVYKJd1E2wsXBybEDdjUNqnQav-9M4Zkk4XewH4z89688bwGhS4xCAOLfzpUBT5KURnR5ApAdE6rrtmj4T-AVhgnC9kK5SADYSFr0QinZ64jvo6qymA1D0hiRiSyQlWLHg3EWjkjCmen2JShaVc7uWqNPhM4etlOYWuG7ZIE1vKMCq295pzh58tHzqF1wkmt7urn6od2CL5UtlyHV6FAeqQlHIfkKls9PCRxCM-c5YQgVDkiKNDpGc4ccZvvQjVX9zWjeAYEiw0aqUtZiLruP-eq1rqFhCJ6qC-Yoi9qHAplIXynQ0qCd1KfsdXGXclsu30j3YAQdxD4K90R2m5_wn5hPezCZWO0PhCFNeX4wmxfiNqhn6mzOPubmwsKi2KKuwlLTaJI1XnoYWq2slI8dh9xP5Mr-8lVx_2L0bj4KKSaAnbxV39Ip6s1m-Y6o8gvTvdIwheD0FEUIVJhTuCOZMroxAXBsyO8Hix9j6TyuI8moCr9NE3mibp3lqoCbog3a3DrG7riCE7Yk28DNaToanZPKitL5OEeXIvGFHTmU3i4pZ4J0oSjVTvKw61ejVM6ZB8kwL4f5wvNU8kgr3iAXOR-snAWtSyl62F0cWr_wCabhrBsUTt4svDCR_5pbvxbGElR3C9Bk8fkxbgr8F2GHWil1wl9l3pFl3dwrC0Ctfp_BTN2_TfyQiBrgmXQoGmELGn9vfKOyANyscE8COmzxIOg95sHuXojKC_Dba-KIHSmw2XQtSXVH7dlEB4E1V4GSMq1SYeV6jfr2z84HOKq?type=jpg)](https://mermaid.live/edit#pako:eNp1VMGOmzAQ_ZURl6Zq8gMcVqIsrVYKJd1E2wsXBybEDdjUNqnQav-9M4Zkk4XewH4z89688bwGhS4xCAOLfzpUBT5KURnR5ApAdE6rrtmj4T-AVhgnC9kK5SADYSFr0QinZ64jvo6qymA1D0hiRiSyQlWLHg3EWjkjCmen2JShaVc7uWqNPhM4etlOYWuG7ZIE1vKMCq295pzh58tHzqF1wkmt7urn6od2CL5UtlyHV6FAeqQlHIfkKls9PCRxCM-c5YQgVDkiKNDpGc4ccZvvQjVX9zWjeAYEiw0aqUtZiLruP-eq1rqFhCJ6qC-Yoi9qHAplIXynQ0qCd1KfsdXGXclsu30j3YAQdxD4K90R2m5_wn5hPezCZWO0PhCFNeX4wmxfiNqhn6mzOPubmwsKi2KKuwlLTaJI1XnoYWq2slI8dh9xP5Mr-8lVx_2L0bj4KKSaAnbxV39Ip6s1m-Y6o8gvTvdIwheD0FEUIVJhTuCOZMroxAXBsyO8Hix9j6TyuI8moCr9NE3mibp3lqoCbog3a3DrG7riCE7Yk28DNaToanZPKitL5OEeXIvGFHTmU3i4pZ4J0oSjVTvKw61ejVM6ZB8kwL4f5wvNU8kgr3iAXOR-snAWtSyl62F0cWr_wCabhrBsUTt4svDCR_5pbvxbGElR3C9Bk8fkxbgr8F2GHWil1wl9l3pFl3dwrC0Ctfp_BTN2_TfyQiBrgmXQoGmELGn9vfKOyANyscE8COmzxIOg95sHuXojKC_Dba-KIHSmw2XQtSXVH7dlEB4E1V4GSMq1SYeV6jfr2z84HOKq)
+
+Components:
+- [Operator](./operator)
+- [Aggregator](./aggregator)
+- [MultiProver AVS](./contracts/src/core/MultiProverServiceManager.sol)
+- [TEE Liveness Contract](./contracts/src/core/TEELivenessVerifier.sol)
+- [Attestation Contract](https://github.com/automata-network/sgx-prover/blob/avs/verifier/contracts/AutomataDcapV3Attestation.sol)
 
 The workflow is divided into two parts:
 - Setup

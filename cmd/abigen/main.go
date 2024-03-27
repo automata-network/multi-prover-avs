@@ -16,7 +16,7 @@ func main() {
 	if err := gen("contracts/bindings", "contracts/dcap-v3-attestation/out/", "AutomataDcapV3Attestation"); err != nil {
 		logex.Fatal(err)
 	}
-	if err := gen("contracts/bindings", "contracts/out/", "SGXVerifier"); err != nil {
+	if err := gen("contracts/bindings", "contracts/out/", "TEELivenessVerifier"); err != nil {
 		logex.Fatal(err)
 	}
 }
