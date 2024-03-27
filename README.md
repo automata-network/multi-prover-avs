@@ -4,6 +4,7 @@
 - [AVS Task Description](#avs-task-description)
 - [AVS Architecture](#avs-architecture)
 - [AVS Workflow](#avs-workflow)
+- [TEE Committee and Quorum](#tee-committee-and-quorum)
 ## About Multi-Prover AVS
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
 ![Automata Multi-Prover AVS Design](/assets/multiprover-design.png)
@@ -74,3 +75,10 @@ The workflow is divided into two parts:
     - Operators sign the final state and send it together with signature to aggregator
     - Aggregator will fetch operator's validity before accepting its submission
     - Aggregator aggregate all the BLS signature and submit to the AVS service manager
+
+## TEE Committee and Quorum
+![Committee and Quorum](./assets/committee-and-quorum.jpg)
+
+**TEE Committee** is a set of quorum that is responsible to handle a specific type of task. For example, proving the root state of scroll at a particular block height. Operators do not need to actively choose a committee, but automatically belong to a committee by joining quorums. The introduction of `TEE Committee` facilitates a more organized structuring of operators and tasks. And lays the groundwork for future enhancements, including the rewarding mechanism and constraints of stake distribution across quorums.
+
+The concept of a **TEE Quorum** aligns with the quorum definition utilized by Eigenlayer, but each quorum is associated with a TEE platform, such as Intel SGX. Each quorum belongs to a committee, operators can choose to join any quorum, But only the votes from operators possessing the requisite attestation will be accepted by the aggregator.
