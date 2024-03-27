@@ -56,6 +56,13 @@ The architecture of the AVS contains:
 Below is a detailed diagram of the workflow
 ![Automata Multi-Prover AVS Workflow](/assets/avs-workflow.png)
 
+Components:
+- [Operator](./operator)
+- [Aggregator](./aggregator)
+- [MultiProver AVS](./contracts/src/core/MultiProverServiceManager.sol)
+- [TEE Liveness Contract](./contracts/src/core/TEELivenessVerifier.sol)
+- [Attestation Contract](https://github.com/automata-network/sgx-prover/blob/main/verifier/contracts/AutomataDcapV3Attestation.sol)
+
 The workflow is divided into two parts:
 - Setup
     - Follow the [Eigenlayer's doc](https://docs.eigenlayer.xyz/eigenlayer/overview) to stake and register as operator of Multi-prover AVS
@@ -66,15 +73,3 @@ The workflow is divided into two parts:
     - Operators sign the final state and send it together with signature to aggregator
     - Aggregator will fetch operator's validity before accepting its submission
     - Aggregator aggregate all the BLS signature and submit to the AVS service manager
-
-## Attestation Workflow
-
-### Attesatation Contract Interaction
-![Attesatation Contract Interaction](/assets/attestation-contract-interaction.png)
-
-### Submit TEE Liveness Proof
-![Automata Attestation Workflow(submit)](/assets/submit-tee-liveness-proof.png)
-
-### Verify TEE Liveness Proof
-![Automata Attestation Workflow(verify)](/assets/verify-tee-liveness-proof.png)
-
