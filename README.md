@@ -61,7 +61,7 @@ Components:
 - [Aggregator](./aggregator)
 - [MultiProver AVS](./contracts/src/core/MultiProverServiceManager.sol)
 - [TEE Liveness Contract](./contracts/src/core/TEELivenessVerifier.sol)
-- [Attestation Contract](https://github.com/automata-network/sgx-prover/blob/main/verifier/contracts/AutomataDcapV3Attestation.sol)
+- [Attestation Contract](https://github.com/automata-network/sgx-prover/blob/avs/verifier/contracts/AutomataDcapV3Attestation.sol)
 
 The workflow is divided into two parts:
 - Setup
