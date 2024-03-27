@@ -9,7 +9,7 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/automata-network/multi-prover-avs/aggregator"
-	"github.com/automata-network/multi-prover-avs/contracts/bindings/SGXVerifier"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -28,7 +28,7 @@ type Config struct {
 	ProverURL     string
 	AggregatorURL string
 
-	SGXVerifierAddr common.Address
+	TEELivenessVerifierAddr common.Address
 
 	TaskFetcher *TaskFetcher
 
@@ -38,7 +38,8 @@ type Config struct {
 	EthRpcUrl string
 	EthWsUrl  string
 
-	AVSRegistryCoordinatorAddress common.Address
+	StrategyAddress               common.Address
+	RegistryCoordinatorAddress    common.Address
 	OperatorStateRetrieverAddress common.Address
 	EigenMetricsIpPortAddress     string
 }
@@ -64,8 +65,8 @@ type Operator struct {
 	eigenClients *clients.Clients
 	taskFetcher  *LogTracer
 
-	ethclient   *ethclient.Client
-	sgxVerifier *SGXVerifier.SGXVerifier
+	ethclient           *ethclient.Client
+	TEELivenessVerifier *TEELivenessVerifier.TEELivenessVerifier
 }
 
 func NewOperator(cfg *Config) (*Operator, error) {
@@ -80,6 +81,7 @@ func NewOperator(cfg *Config) (*Operator, error) {
 	}
 
 	logger := logex.NewLoggerEx(os.Stderr)
+	elog := utils.NewLogger(logger)
 	ecdsaPrivateKey, err := crypto.HexToECDSA(cfg.EcdsaPrivateKey)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -89,13 +91,13 @@ func NewOperator(cfg *Config) (*Operator, error) {
 	chainioConfig := clients.BuildAllConfig{
 		EthHttpUrl:                 cfg.EthRpcUrl,
 		EthWsUrl:                   cfg.EthWsUrl,
-		RegistryCoordinatorAddr:    cfg.AVSRegistryCoordinatorAddress.String(),
+		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress.String(),
 		OperatorStateRetrieverAddr: cfg.OperatorStateRetrieverAddress.String(),
 		AvsName:                    "multi-prover-operator",
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
 
-	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, nil)
+	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, elog)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -110,20 +112,22 @@ func NewOperator(cfg *Config) (*Operator, error) {
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
-	sgxVerifier, err := SGXVerifier.NewSGXVerifier(cfg.SGXVerifierAddr, client)
+	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifier(cfg.TEELivenessVerifierAddr, client)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
 
 	operator := &Operator{
-		operatorId:   operatorId,
-		blsKeyPair:   kp,
-		proverClient: proverClient,
-		logger:       logger,
-		eigenClients: eigenClients,
-		ecdsaKey:     ecdsaPrivateKey,
-		sgxVerifier:  sgxVerifier,
-		ethclient:    client,
+		cfg:                 cfg,
+		operatorId:          operatorId,
+		operatorAddress:     operatorAddress,
+		blsKeyPair:          kp,
+		proverClient:        proverClient,
+		logger:              logger,
+		eigenClients:        eigenClients,
+		ecdsaKey:            ecdsaPrivateKey,
+		TEELivenessVerifier: TEELivenessVerifier,
+		ethclient:           client,
 	}
 
 	if cfg.TaskFetcher != nil {
@@ -158,8 +162,7 @@ func (o *Operator) SaveBlock(uint64) error {
 // callback func for task fetcher
 func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	// parse the task
-	blockNumber := new(big.Int).SetBytes(log.Data[:32])
-	poe, err := o.proverClient.GetPoe(ctx, uint64(blockNumber.Int64()))
+	poe, err := o.proverClient.GetPoe(ctx, log.TxHash)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -177,14 +180,12 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 		return logex.Trace(err)
 	}
 	sig := o.blsKeyPair.SignMessage(digest)
-	pubkey := o.blsKeyPair.PubKey.Serialize()
 
 	// submit to aggregator
-	if err := o.aggregator.SubmitStateHeader(ctx, &aggregator.StateHeaderRequest{
-		StateHeader: stateHeader,
-		Signature:   sig,
-		Pubkey:      pubkey,
-		OperatorId:  o.operatorId,
+	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
+		Task:       stateHeader,
+		Signature:  sig,
+		OperatorId: o.operatorId,
 	}); err != nil {
 		return logex.Trace(err)
 	}
@@ -194,6 +195,9 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 
 func (o *Operator) Start(ctx context.Context) error {
 	if err := o.RegisterOperatorWithEigenlayer(ctx); err != nil {
+		return logex.Trace(err)
+	}
+	if err := o.DepositIntoStrategy(ctx); err != nil {
 		return logex.Trace(err)
 	}
 	if err := o.RegisterOperatorWithAvs(ctx); err != nil {
@@ -214,8 +218,10 @@ func (o *Operator) Start(ctx context.Context) error {
 		return logex.Trace(err)
 	}
 
-	if err := o.taskFetcher.Run(ctx); err != nil {
-		return logex.Trace(err)
+	if o.taskFetcher != nil {
+		if err := o.taskFetcher.Run(ctx); err != nil {
+			return logex.Trace(err)
+		}
 	}
 
 	return nil
@@ -241,7 +247,7 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 	var x, y [32]byte
 	copy(x[:], pubkeyBytes[:32])
 	copy(y[:], pubkeyBytes[32:64])
-	isRegistered, err := o.sgxVerifier.IsProverRegistered(nil, x, y)
+	isRegistered, err := o.TEELivenessVerifier.VerifyLivenessProof(nil, x, y)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -262,7 +268,7 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 		return logex.Trace(err)
 	}
 
-	tx, err := o.sgxVerifier.Register(opt, report)
+	tx, err := o.TEELivenessVerifier.SubmitLivenessProof(opt, report)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -273,20 +279,48 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 }
 
 func (o *Operator) RegisterOperatorWithEigenlayer(ctx context.Context) error {
+	registered, err := o.eigenClients.ElChainReader.IsOperatorRegistered(nil, eigenSdkTypes.Operator{
+		Address: o.operatorAddress.String(),
+	})
+	if err != nil {
+		return logex.Trace(err)
+	}
+	if registered {
+		return nil
+	}
+
 	op := eigenSdkTypes.Operator{
 		Address:                 o.operatorAddress.String(),
 		EarningsReceiverAddress: o.operatorAddress.String(),
 	}
-	_, err := o.eigenClients.ElChainWriter.RegisterAsOperator(ctx, op)
+	receipt, err := o.eigenClients.ElChainWriter.RegisterAsOperator(ctx, op)
 	if err != nil {
-		o.logger.Errorf("Error registering operator with eigenlayer")
-		return err
+		return logex.Trace(err, "Error registering operator with eigenlayer")
 	}
+
+	o.logger.Infof("Registered operator with Eigenlayer. status: %v", receipt.Status)
+	return nil
+}
+
+func (o *Operator) DepositIntoStrategy(ctx context.Context) error {
+	// strategyAddr common.Address, amount *big.Int
+	_, tokenAddr, err := o.eigenClients.ElChainReader.GetStrategyAndUnderlyingToken(nil, o.cfg.StrategyAddress)
+	if err != nil {
+		return logex.Trace(err, "Failed to fetch strategy contract")
+	}
+	logex.Info("tokenAddr:", tokenAddr)
+
+	decimal := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	amount := new(big.Int).Mul(big.NewInt(32), decimal)
+	_, err = o.eigenClients.ElChainWriter.DepositERC20IntoStrategy(context.Background(), o.cfg.StrategyAddress, amount)
+	if err != nil {
+		return logex.Trace(err, "Error depositing into strategy")
+	}
+
 	return nil
 }
 
 func (o *Operator) RegisterOperatorWithAvs(ctx context.Context) error {
-	// hardcode these things for now
 	quorumNumbers := []eigenSdkTypes.QuorumNum{0}
 	socket := "Not Needed"
 	operatorToAvsRegistrationSigSalt := [32]byte{123}

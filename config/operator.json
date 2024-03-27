@@ -1,3 +1,13 @@
 {
-    "BlsPrivateKey": "0xc50b24663b5b893bec4db6f8b2b55a38a344d7f5fc9dd033e4e1d02f32ad1ee5"
+    "BlsPrivateKey": "0xc50b24663b5b893bec4db6f8b2b55a38a344d7f5fc9dd033e4e1d02f32ad1ee5",
+    "ProverURL": "http://localhost:8545",
+    "EcdsaPrivateKey": "4de4e5144b77e6e77f6f62aa7deef2301e1e0ab8c1a4732cd5aea13d4533a66a",
+    "EthRpcUrl": "http://localhost:8545",
+    "EthWsUrl": "ws://localhost:8545",
+    "EigenMetricsIpPortAddress": ":15682",
+
+    "RegistryCoordinatorAddress": "0x7Eb78E05419416Fd31F6b365c1B9A1a7115e04cB",
+    "strategyAddress": "0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3",
+
+    "":""
 }

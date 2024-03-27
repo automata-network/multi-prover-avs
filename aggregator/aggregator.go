@@ -5,18 +5,19 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
-	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
 	blsagg "github.com/Layr-Labs/eigensdk-go/services/bls_aggregation"
 	oppubkeysserv "github.com/Layr-Labs/eigensdk-go/services/operatorpubkeys"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
-	"github.com/automata-network/multi-prover-avs/contracts/bindings/SGXVerifier"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
+	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,11 +30,11 @@ type Config struct {
 	ListenAddr       string
 	TimeToExpirySecs int
 
-	EcdsaPrivateKey            string
-	EthHttpEndpoint            string
-	EthWsEndpoint              string
-	MultiProverContractAddress common.Address
-	SGXVerifierContractAddress common.Address
+	EcdsaPrivateKey                    string
+	EthHttpEndpoint                    string
+	EthWsEndpoint                      string
+	MultiProverContractAddress         common.Address
+	TEELivenessVerifierContractAddress common.Address
 
 	AVSRegistryCoordinatorAddress common.Address
 	OperatorStateRetrieverAddress common.Address
@@ -49,7 +50,8 @@ type Aggregator struct {
 	client *ethclient.Client
 
 	multiProverContract *MultiProverServiceManager.MultiProverServiceManager
-	sgxVerifier         *SGXVerifier.SGXVerifierCaller
+	TEELivenessVerifier *TEELivenessVerifier.TEELivenessVerifierCaller
+	registry            *avsregistry.AvsRegistryServiceChainCaller
 
 	taskMutex    sync.Mutex
 	taskIndexSeq uint32
@@ -57,7 +59,7 @@ type Aggregator struct {
 }
 
 type Task struct {
-	state *StateHeaderRequest
+	state *TaskRequest
 	index uint32
 }
 
@@ -78,6 +80,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
+	logger := utils.NewLogger(logex.NewLoggerEx(os.Stderr))
 
 	chainioConfig := clients.BuildAllConfig{
 		EthHttpUrl:                 cfg.EthHttpEndpoint,
@@ -88,11 +91,10 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
 
-	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, nil)
+	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, logger)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
-	logger := logging.Logger(nil)
 
 	operatorPubkeysService := oppubkeysserv.NewOperatorPubkeysServiceInMemory(context.Background(), eigenClients.AvsRegistryChainSubscriber, eigenClients.AvsRegistryChainReader, logger)
 	avsRegistryService := avsregistry.NewAvsRegistryServiceChainCaller(eigenClients.AvsRegistryChainReader, operatorPubkeysService, logger)
@@ -102,7 +104,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
-	sgxVerifier, err := SGXVerifier.NewSGXVerifierCaller(cfg.SGXVerifierContractAddress, client)
+	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddress, client)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -113,7 +115,8 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		client:                client,
 		blsAggregationService: blsAggregationService,
 		multiProverContract:   multiProverContract,
-		sgxVerifier:           sgxVerifier,
+		TEELivenessVerifier:   TEELivenessVerifier,
+		registry:              avsRegistryService,
 	}, nil
 }
 
@@ -174,8 +177,8 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 	}
 }
 
-func (agg *Aggregator) submitStateHeader(ctx context.Context, req *StateHeaderRequest) error {
-	digest, err := req.StateHeader.Digest()
+func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) error {
+	digest, err := req.Task.Digest()
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -193,7 +196,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *StateHeaderRe
 
 	if !ok {
 		timeToExpiry := time.Duration(agg.cfg.TimeToExpirySecs) * time.Second
-		sh := req.StateHeader
+		sh := req.Task
 		quorumNumbers := make([]types.QuorumNum, len(sh.QuorumNumbers))
 		quorumThresholdPercentages := make([]types.QuorumThresholdPercentage, len(sh.QuorumThresholdPercentages))
 		for i, qn := range sh.QuorumNumbers {
@@ -233,7 +236,7 @@ func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServic
 		NonSignerStakeIndices:        blsAggServiceResp.NonSignerStakeIndices,
 	}
 
-	tx, err := agg.multiProverContract.ConfirmState(agg.transactOpt, *task.state.StateHeader.ToAbi(), nonSignerStakesAndSignature)
+	tx, err := agg.multiProverContract.ConfirmState(agg.transactOpt, *task.state.Task.ToAbi(), nonSignerStakesAndSignature)
 	if err != nil {
 		return logex.Trace(err)
 	}

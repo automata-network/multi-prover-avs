@@ -2,17 +2,26 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 
 	"github.com/automata-network/multi-prover-avs/aggregator"
 	"github.com/chzyer/logex"
 )
 
 func main() {
-	cfg := &aggregator.Config{
-		ListenAddr: ":12345",
+	cfgBytes, err := os.ReadFile("config/aggregator.json")
+	if err != nil {
+		logex.Fatal(err)
 	}
+
+	var cfg aggregator.Config
+	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
+		logex.Fatal(err)
+	}
+	logex.Pretty(cfg)
 	ctx := context.Background()
-	agg, err := aggregator.NewAggregator(ctx, cfg)
+	agg, err := aggregator.NewAggregator(ctx, &cfg)
 	if err != nil {
 		logex.Fatal(err)
 	}

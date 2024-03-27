@@ -56,6 +56,13 @@ The architecture of the AVS contains:
 Below is a detailed diagram of the workflow
 ![Automata Multi-Prover AVS Workflow](/assets/avs-workflow.png)
 
+Components:
+- [Operator](./operator)
+- [Aggregator](./aggregator)
+- [MultiProver AVS](./contracts/src/core/MultiProverServiceManager.sol)
+- [TEE Liveness Contract](./contracts/src/core/TEELivenessVerifier.sol)
+- [Attestation Contract](https://github.com/automata-network/sgx-prover/blob/avs/verifier/contracts/AutomataDcapV3Attestation.sol)
+
 The workflow is divided into two parts:
 - Setup
     - Follow the [Eigenlayer's doc](https://docs.eigenlayer.xyz/eigenlayer/overview) to stake and register as operator of Multi-prover AVS

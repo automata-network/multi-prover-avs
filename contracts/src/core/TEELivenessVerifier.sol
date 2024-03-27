@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IAttestation} from "../interfaces/IAttestation.sol";
 
-contract SGXVerifier {
+contract TEELivenessVerifier {
     struct Pubkey {
         bytes32 x;
         bytes32 y;
@@ -52,7 +52,7 @@ contract SGXVerifier {
         return dcapAttestation.verifyMrSigner(_mrsigner);
     }
 
-    function register(bytes calldata report) public {
+    function submitLivenessProof(bytes calldata report) public {
         (bool succ, bytes memory reportData) = dcapAttestation
             .verifyAttestation(report);
         require(succ, "attestation report validation fail");
@@ -66,7 +66,7 @@ contract SGXVerifier {
         attestedReports[reportHash] = true;
     }
 
-    function isProverRegistered(
+    function verifyLivenessProof(
         bytes32 pubkeyX,
         bytes32 pubkeyY
     ) public view returns (bool) {

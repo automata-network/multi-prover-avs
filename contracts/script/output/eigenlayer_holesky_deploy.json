@@ -1,0 +1,22 @@
+{
+    "avsDirectory": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
+    "avsDirectoryImplementation": "0xEF5BA995Bc7722fd1e163edF8Dc09375de3d3e3a",
+    "baseStrategyImplementation": "",
+    "delayedWithdrawalRouter": "",
+    "delayedWithdrawalRouterImplementation": "",
+    "delegationManager": "0xA44151489861Fe9e3055d95adC98FbD462B948e7",
+    "delegationManagerImplementation": "0x83f8F8f0BB125F7870F6bfCf76853f874C330D76",
+    "eigenLayerPauserRegistry": "",
+    "eigenLayerProxyAdmin": "",
+    "eigenPodBeacon": "",
+    "eigenPodImplementation": "",
+    "eigenPodManager": "",
+    "eigenPodManagerImplementation": "",
+    "object": "eigenlayer contracts deployment output",
+    "slasher": "",
+    "slasherImplementation": "",
+    "strategyBaseTVLLimits": "",
+    "strategyManager": "",
+    "strategyManagerImplementation": "",
+    "underlayingToken": ""
+  }
