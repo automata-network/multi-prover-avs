@@ -99,7 +99,7 @@ contract EigenLayerDeployer is Script {
         Param memory param;
         // StrategyManager
         param.STRATEGY_MANAGER_INIT_PAUSED_STATUS = 0;
-        param.STRATEGY_MANAGER_WHITELISTER = 0x0000000000000000000000000000000000000000;
+        param.STRATEGY_MANAGER_WHITELISTER = msg.sender;
         // Slasher
         param.SLASHER_INIT_PAUSED_STATUS = 0;
         // DelegationManager

@@ -66,3 +66,15 @@ The workflow is divided into two parts:
     - Operators sign the final state and send it together with signature to aggregator
     - Aggregator will fetch operator's validity before accepting its submission
     - Aggregator aggregate all the BLS signature and submit to the AVS service manager
+
+## Attestation Workflow
+
+### Attesatation Contract Interaction
+![Attesatation Contract Interaction](/assets/attestation-contract-interaction.png)
+
+### Submit TEE Liveness Proof
+![Automata Attestation Workflow(submit)](/assets/submit-tee-liveness-proof.png)
+
+### Verify TEE Liveness Proof
+![Automata Attestation Workflow(verify)](/assets/verify-tee-liveness-proof.png)
+

@@ -1,1 +1,8 @@
-{}
+{
+    "EcdsaPrivateKey": "c34e2b18ad57cf7b7b1c31e13491fdd0483d2f6004354080dca979db3ab4386c",
+    "EthHttpEndpoint": "http://localhost:8545",
+    "EthWsEndpoint": "ws://localhost:8545",
+    "ListenAddr": ":18545",
+    "AVSRegistryCoordinatorAddress": "0x7Eb78E05419416Fd31F6b365c1B9A1a7115e04cB",
+    "EigenMetricsIpPortAddress": ":15682"
+}

@@ -26,11 +26,10 @@ func NewClient(endpoint string) (*Client, error) {
 	}, nil
 }
 
-type StateHeaderRequest struct {
-	StateHeader *StateHeader
-	Signature   *bls.Signature
-	Pubkey      hexutil.Bytes
-	OperatorId  types.OperatorId
+type TaskRequest struct {
+	Task       *StateHeader
+	Signature  *bls.Signature
+	OperatorId types.OperatorId
 }
 
 type StateHeader struct {
@@ -62,9 +61,9 @@ func (s *StateHeader) Digest() (types.TaskResponseDigest, error) {
 	return digest, nil
 }
 
-func (c *Client) SubmitStateHeader(ctx context.Context, state *StateHeaderRequest) error {
+func (c *Client) SubmitTask(ctx context.Context, task *TaskRequest) error {
 	var result bool
-	if err := c.client.CallContext(ctx, &result, "aggregator_submitStateHeader", state); err != nil {
+	if err := c.client.CallContext(ctx, &result, "aggregator_submitTask", task); err != nil {
 		return logex.Trace(err)
 	}
 	return nil
