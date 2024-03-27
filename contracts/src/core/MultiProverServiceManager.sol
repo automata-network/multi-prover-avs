@@ -53,6 +53,17 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
             "MultiProverServiceManager.confirmState: quorumNumbers and signedStakeForQuorums must be of the same length"
         );
 
+        // make sure the committee exists
+        require(committees[stateHeader.committeeId].id != 0, "MultiProverServiceManager.confirmState: committee does not exist");
+
+        // make sure the quorums belong to the committee
+        for (uint256 i = 0; i < stateHeader.quorumNumbers.length; i++) {
+            require(
+                quorumIdToCommitteeId[uint8(stateHeader.quorumNumbers[i])] == stateHeader.committeeId,
+                "MultiProverServiceManager.confirmState: quorum does not belong to committee"
+            );
+        }
+
         // calculate the hash of the state that operators are signing
         bytes32 reducedStateHeaderHash = _hashReducedStateHeader(_convertStateHeaderToReducedStateHeader(stateHeader));
 
@@ -85,7 +96,55 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
 
         taskId = taskIdMemory + 1;
 
-        emit StateConfirmed(stateHeader.identifier, stateHeader.metadata, stateHeader.state);
+        emit StateConfirmed(stateHeader.committeeId, stateHeader.metadata, stateHeader.state);
+    }
+
+    function addCommittee(Committee memory committee) external onlyOwner {
+        require(committee.id != 0, "MultiProverServiceManager.addCommittee: committee id cannot be 0");
+        require(committees[committee.id].id == 0, "MultiProverServiceManager.addCommittee: committee already exists");
+        for (uint256 i = 0; i < committee.teeQuorumNumbers.length; i++) {
+            uint8 teeQuorumNumber = uint8(committee.teeQuorumNumbers[i]);
+            require(teeQuorums[teeQuorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.addCommittee: tee quorum does not exist");
+            quorumIdToCommitteeId[teeQuorumNumber] = committee.id;
+        }
+
+        committees[committee.id] = committee;
+    }
+
+    function updateCommittee(Committee memory committee) external onlyOwner {
+        require(committees[committee.id].id != 0, "MultiProverServiceManager.updateCommittee: committee does not exist");
+        for (uint256 i = 0; i < committee.teeQuorumNumbers.length; i++) {
+            uint8 teeQuorumNumber = uint8(committee.teeQuorumNumbers[i]);
+            require(teeQuorums[teeQuorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.addCommittee: tee quorum does not exist");
+            require(quorumIdToCommitteeId[teeQuorumNumber] == 0 || quorumIdToCommitteeId[teeQuorumNumber] == committee.id, "MultiProverServiceManager.updateCommittee: tee quorum is used by another committee");
+            quorumIdToCommitteeId[teeQuorumNumber] = committee.id;
+        }
+
+        committees[committee.id] = committee;
+    }
+
+    function removeCommittee(uint256 committeeId) external onlyOwner {
+        require(committees[committeeId].id != 0, "MultiProverServiceManager.removeCommittee: committee does not exist");
+        bytes memory teeQuorumNumbers = committees[committeeId].teeQuorumNumbers;
+        for (uint256 i = 0; i < teeQuorumNumbers.length; i++) {
+            quorumIdToCommitteeId[uint8(teeQuorumNumbers[i])] = 0;
+        }
+
+        delete committees[committeeId];
+    }
+
+    function addTEEQuorum(TEEQuorum memory teeQuorum) external onlyOwner {
+        require(teeQuorums[teeQuorum.quorumNumber].teeType == TEE.NONE, "MultiProverServiceManager.addTEEQuorum: tee quorum already exists");
+        require(_stakeRegistry.getTotalStakeHistoryLength(teeQuorum.quorumNumber) != 0, "MultiProverServiceManager.addTEEQuorum: quorum not initialized");
+
+        teeQuorums[teeQuorum.quorumNumber] = teeQuorum;
+    }
+
+    function removeTEEQuorum(TEEQuorum memory teeQuorum) external onlyOwner {
+        require(teeQuorums[teeQuorum.quorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.removeTEEQuorum: tee quorum does not exist");
+        require(quorumIdToCommitteeId[teeQuorum.quorumNumber] == 0, "MultiProverServiceManager.removeTEEQuorum: tee quorum is in use");
+
+        delete teeQuorums[teeQuorum.quorumNumber];
     }
 
     function setStateConfirmer(address _stateConfirmer) external onlyOwner {
@@ -111,7 +170,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         returns (ReducedStateHeader memory) 
     {
         return ReducedStateHeader({
-            identifier: stateHeader.identifier,
+            committeeId: stateHeader.committeeId,
             metadata: stateHeader.metadata,
             state: stateHeader.state,
             referenceBlockNumber: stateHeader.referenceBlockNumber

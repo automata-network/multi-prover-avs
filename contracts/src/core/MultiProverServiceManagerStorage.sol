@@ -15,6 +15,12 @@ abstract contract MultiProverServiceManagerStorage is IMultiProverServiceManager
     /// @notice The task metadata hash for a given task ID
     mapping(uint32 => bytes32) public taskIdToMetadataHash;
 
+    mapping(uint256 => Committee) public committees;
+
+    mapping(uint8 => TEEQuorum) public teeQuorums;
+
+    mapping(uint8 => uint256) public quorumIdToCommitteeId;
+
     /// @notice the address that is permissioned to submit state transitions
     address public stateConfirmer;
 }
