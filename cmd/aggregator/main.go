@@ -3,14 +3,27 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"os"
 
 	"github.com/automata-network/multi-prover-avs/aggregator"
 	"github.com/chzyer/logex"
 )
 
+type Flag struct {
+	Config string
+}
+
+func NewFlag() *Flag {
+	var f Flag
+	flag.StringVar(&f.Config, "c", "config/aggregator.json", "config file")
+	flag.Parse()
+	return &f
+}
+
 func main() {
-	cfgBytes, err := os.ReadFile("config/aggregator.json")
+	flag := NewFlag()
+	cfgBytes, err := os.ReadFile(flag.Config)
 	if err != nil {
 		logex.Fatal(err)
 	}

@@ -4,6 +4,8 @@
 - [AVS Task Description](#avs-task-description)
 - [AVS Architecture](#avs-architecture)
 - [AVS Workflow](#avs-workflow)
+- [Quick Start](#quick-start)
+
 ## About Multi-Prover AVS
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
 ![Automata Multi-Prover AVS Design](/assets/multiprover-design.png)
@@ -144,4 +146,19 @@ go run ./cmd/aggregator
 go run ./cmd/operator
 ```
 
+### With Docker compose
 
+1. build image
+```
+> ./script/docker.sh build
+```
+
+1. init state
+```
+> ./scripts/docker.sh init_state --simulation
+```
+
+2. start aggregator & operator
+```
+> docker compose up
+```

@@ -38,7 +38,9 @@ function deploy_attestation() {
 
 	teeVerifierAddr=$(_get_key $TEE_DEPLOY .TEELivenessVerifier)
 	_set_key config/aggregator.json TEELivenessVerifierContractAddress $teeVerifierAddr
+	_set_key config/aggregator-docker-compose.json TEELivenessVerifierContractAddress $teeVerifierAddr
 	_set_key config/operator.json TEELivenessVerifierAddr $teeVerifierAddr
+	_set_key config/operator-docker-compose.json TEELivenessVerifierAddr $teeVerifierAddr
 
 	if [[ "$1" == "--simulation" ]]; then
 		echo
@@ -66,13 +68,17 @@ function deploy_avs() {
 
 	registryCoordinator=$(_get_key $AVS_DEPLOY .registryCoordinator)
 	_set_key config/operator.json RegistryCoordinatorAddress $registryCoordinator
+	_set_key config/operator-docker-compose.json RegistryCoordinatorAddress $registryCoordinator
 	_set_key config/aggregator.json AVSRegistryCoordinatorAddress $registryCoordinator
+	_set_key config/aggregator-docker-compose.json AVSRegistryCoordinatorAddress $registryCoordinator
 
 	operatorStateRetriever=$(_get_key $AVS_DEPLOY .operatorStateRetriever)
 	_set_key config/aggregator.json OperatorStateRetrieverAddress $operatorStateRetriever
+	_set_key config/aggregator-docker-compose.json OperatorStateRetrieverAddress $operatorStateRetriever
 
 	multiProverServiceManager=$(_get_key $AVS_DEPLOY .multiProverServiceManager)
 	_set_key config/aggregator.json MultiProverContractAddress $multiProverServiceManager
+	_set_key config/aggregator-docker-compose.json MultiProverContractAddress $multiProverServiceManager
 }
 
 function topup_steth() {
@@ -103,7 +109,6 @@ function init_all() {
 	deploy_avs
 	deploy_attestation $1 # enable simulation
 }
-
 
 source .env
 if [[ "$PRIVATE_KEY" == "" ]]; then
