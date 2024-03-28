@@ -1,5 +1,5 @@
 {
-    "BlsPrivateKey": "5650b11dcef2d36ff5d03cfee3827ad725f128e9f5a4fbad0dfa019838e6c1b0",
+    "BlsPrivateKey": "0x5650b11dcef2d36ff5d03cfee3827ad725f128e9f5a4fbad0dfa019838e6c1b0",
     "ProverURL": "http://localhost:8545",
     "EcdsaPrivateKey": "295f2c6d10bcccb48c6c45ecae3db01043bb018bd1e5fc0af091b7a17adfddde",
     "EthRpcUrl": "http://localhost:8545",
@@ -8,8 +8,8 @@
     "AggregatorURL": "http://localhost:18545",
     "simulation": true,
 
-    "RegistryCoordinatorAddress": "0xB6EcE648151B634772fc063914aa30cB9CBAA92e",
-    "TEELivenessVerifierAddr": "0x8FA45F12d75A51c29457D3C8cD44189FeB35CA65",
+    "RegistryCoordinatorAddress": "0x23b0000F209e6f964a0620dd24920eA151aE25B1",
+    "TEELivenessVerifierAddr": "0x8A0Dc55cb68d44707C6d7CddfB1Ac71bbD4eDE22",
     "strategyAddress": "0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3",
 
     "":""

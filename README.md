@@ -115,29 +115,31 @@ The workflow is divided into two parts:
 
 ## Quick Start
 
-start a execution node
+Steps for running the multi-prover-avs in simulation node(without the SGX prover):
+
+1. Start a execution node
 ```
 > anvil --fork-url ${holesky_rpc_endpoint} --fork-block-number 1218851
 ```
 
-prepare the environment
+2. Prepare the environment
 ```
 > cp .env.example .env
 > # vim .env
 ```
 
-deploy the avs contracts
+3. Deploy the avs contracts
 ```
 > ./script/deploy.sh init_all --simulation
 > # this script will update the configure on config/operator.json and config/aggregator.json
 ```
 
-run the aggregator
+4. Run the aggregator
 ```
 go run ./cmd/aggregator
 ```
 
-run the operator
+5. Run the operator
 ```
 go run ./cmd/operator
 ```

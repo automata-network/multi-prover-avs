@@ -38,7 +38,7 @@ type Config struct {
 	AVSRegistryCoordinatorAddress common.Address
 	OperatorStateRetrieverAddress common.Address
 	EigenMetricsIpPortAddress     string
-	ScanStartBlock                int
+	ScanStartBlock                uint64
 
 	Simulation bool
 }
@@ -258,6 +258,7 @@ func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServic
 	if err != nil {
 		return logex.Trace(err)
 	}
+	logex.Pretty(task.state.Task)
 	logex.Infof("confirm state: %v", tx.Hash())
 	return nil
 }

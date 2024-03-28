@@ -1,7 +1,7 @@
 {
-  "AutomataDcapV3Attestation": "0xDf8B253c9668A7647fab934C5A062cA7488DE72f",
-  "PEMCertChainLib": "0xAD4952533056d2E0533a8203B53B3D520886d5a3",
-  "SigVerifyLib": "0x2091A8cea6337003E2664f791007ec40250eaE55",
-  "TEELivenessVerifier": "0x8FA45F12d75A51c29457D3C8cD44189FeB35CA65",
+  "AutomataDcapV3Attestation": "0x62BE6dfFd48C74199344a6f1bF3e006791900678",
+  "PEMCertChainLib": "0x74Ec6bf0615B0E78A642819175da9A7b8fE413Ea",
+  "SigVerifyLib": "0x018810423187104733Edb1C653a1c80114105b7D",
+  "TEELivenessVerifier": "0x8A0Dc55cb68d44707C6d7CddfB1Ac71bbD4eDE22",
   "object": "tee liveness verifier contract"
 }
