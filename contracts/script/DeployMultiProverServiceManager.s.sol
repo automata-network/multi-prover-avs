@@ -18,6 +18,7 @@ import {RegistryCoordinator} from "eigenlayer-middleware/RegistryCoordinator.sol
 import {IndexRegistry} from "eigenlayer-middleware/IndexRegistry.sol";
 import {StakeRegistry, IStrategy} from "eigenlayer-middleware/StakeRegistry.sol";
 import {BLSApkRegistry} from "eigenlayer-middleware/BLSApkRegistry.sol";
+import {OperatorStateRetriever} from "eigenlayer-middleware/OperatorStateRetriever.sol";
 
 import {IMultiProverServiceManager} from "../src/interfaces/IMultiProverServiceManager.sol";
 import {MultiProverServiceManager} from "../src/core/MultiProverServiceManager.sol";
@@ -154,6 +155,7 @@ contract DeployMultiProverServiceManager is Script {
             );
         }
 
+        OperatorStateRetriever operatorStateRetriever = new OperatorStateRetriever();
         vm.stopBroadcast();
 
         string memory output = "multi-prover avs contracts deployment output";
@@ -162,6 +164,7 @@ contract DeployMultiProverServiceManager is Script {
         vm.serializeAddress(output, "stakeRegistry", address(stakeRegistry));
         vm.serializeAddress(output, "registryCoordinator", address(registryCoordinator));
         vm.serializeAddress(output, "multiProverServiceManager", address(multiProverServiceManager));
+        vm.serializeAddress(output, "operatorStateRetriever", address(operatorStateRetriever));
 
         string memory outputFilePath = string.concat(vm.projectRoot(), "/script/output/avs_deploy_output.json");
         string memory finalJson = vm.serializeString(output, "object", output);

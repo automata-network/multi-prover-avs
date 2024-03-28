@@ -1,12 +1,15 @@
 {
-    "BlsPrivateKey": "0xc50b24663b5b893bec4db6f8b2b55a38a344d7f5fc9dd033e4e1d02f32ad1ee5",
+    "BlsPrivateKey": "5650b11dcef2d36ff5d03cfee3827ad725f128e9f5a4fbad0dfa019838e6c1b0",
     "ProverURL": "http://localhost:8545",
-    "EcdsaPrivateKey": "4de4e5144b77e6e77f6f62aa7deef2301e1e0ab8c1a4732cd5aea13d4533a66a",
+    "EcdsaPrivateKey": "295f2c6d10bcccb48c6c45ecae3db01043bb018bd1e5fc0af091b7a17adfddde",
     "EthRpcUrl": "http://localhost:8545",
     "EthWsUrl": "ws://localhost:8545",
     "EigenMetricsIpPortAddress": ":15682",
+    "AggregatorURL": "http://localhost:18545",
+    "simulation": true,
 
-    "RegistryCoordinatorAddress": "0x7Eb78E05419416Fd31F6b365c1B9A1a7115e04cB",
+    "RegistryCoordinatorAddress": "0xB6EcE648151B634772fc063914aa30cB9CBAA92e",
+    "TEELivenessVerifierAddr": "0x8FA45F12d75A51c29457D3C8cD44189FeB35CA65",
     "strategyAddress": "0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3",
 
     "":""

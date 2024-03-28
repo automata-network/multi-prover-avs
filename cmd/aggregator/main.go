@@ -19,7 +19,6 @@ func main() {
 	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
 		logex.Fatal(err)
 	}
-	logex.Pretty(cfg)
 	ctx := context.Background()
 	agg, err := aggregator.NewAggregator(ctx, &cfg)
 	if err != nil {

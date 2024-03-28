@@ -2,6 +2,7 @@ package aggregator
 
 import (
 	"context"
+	"runtime/debug"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -21,6 +22,20 @@ type SignedTaskResponse struct {
 }
 
 func (a *AggregatorApi) SubmitTask(ctx context.Context, req *TaskRequest) error {
+	defer func() {
+		if err := recover(); err != nil {
+			logex.Error(err, string(debug.Stack()))
+			panic(err)
+		}
+	}()
+	if err := a.submitTask(ctx, req); err != nil {
+		logex.Error(err)
+		return err
+	}
+	return nil
+}
+
+func (a *AggregatorApi) submitTask(ctx context.Context, req *TaskRequest) error {
 	// check bls public key
 	digest, err := req.Task.Digest()
 	if err != nil {
@@ -31,7 +46,10 @@ func (a *AggregatorApi) SubmitTask(ctx context.Context, req *TaskRequest) error 
 	if err != nil {
 		return logex.Trace(err)
 	}
-	pubkey := operatorPubkeys[req.OperatorId]
+	pubkey, ok := operatorPubkeys[req.OperatorId]
+	if !ok {
+		return logex.NewErrorf("operatorId not registered: %v", req.OperatorId)
+	}
 
 	validPubkey, err := req.Signature.Verify(pubkey.Pubkeys.G2Pubkey, digest)
 	if err != nil {
@@ -41,6 +59,7 @@ func (a *AggregatorApi) SubmitTask(ctx context.Context, req *TaskRequest) error 
 		return logex.NewErrorf("invalid signature&pubkey")
 	}
 	x, y := utils.SplitPubkey(pubkey.Pubkeys.G1Pubkey.Serialize())
+
 	pass, err := a.agg.TEELivenessVerifier.VerifyLivenessProof(nil, x, y)
 	if err != nil {
 		return logex.Trace(err)

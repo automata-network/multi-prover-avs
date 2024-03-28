@@ -13,7 +13,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
 	blsagg "github.com/Layr-Labs/eigensdk-go/services/bls_aggregation"
-	oppubkeysserv "github.com/Layr-Labs/eigensdk-go/services/operatorpubkeys"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
@@ -39,6 +38,9 @@ type Config struct {
 	AVSRegistryCoordinatorAddress common.Address
 	OperatorStateRetrieverAddress common.Address
 	EigenMetricsIpPortAddress     string
+	ScanStartBlock                int
+
+	Simulation bool
 }
 
 type Aggregator struct {
@@ -96,7 +98,10 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		return nil, logex.Trace(err)
 	}
 
-	operatorPubkeysService := oppubkeysserv.NewOperatorPubkeysServiceInMemory(context.Background(), eigenClients.AvsRegistryChainSubscriber, eigenClients.AvsRegistryChainReader, logger)
+	operatorPubkeysService, err := NewOperatorPubkeysService(ctx, client, eigenClients.AvsRegistryChainSubscriber, eigenClients.AvsRegistryChainReader, logger, "", cfg.ScanStartBlock, 5000)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
 	avsRegistryService := avsregistry.NewAvsRegistryServiceChainCaller(eigenClients.AvsRegistryChainReader, operatorPubkeysService, logger)
 	blsAggregationService := blsagg.NewBlsAggregatorService(avsRegistryService, logger)
 
@@ -117,6 +122,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		multiProverContract:   multiProverContract,
 		TEELivenessVerifier:   TEELivenessVerifier,
 		registry:              avsRegistryService,
+		taskIndexMap:          make(map[types.Bytes32]*Task),
 	}, nil
 }
 
@@ -147,6 +153,13 @@ func (agg *Aggregator) startRpcServer(ctx context.Context) (func() error, error)
 }
 
 func (agg *Aggregator) Start(ctx context.Context) error {
+	isSimulation, err := agg.TEELivenessVerifier.Simulation(nil)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	if isSimulation != agg.cfg.Simulation {
+		return logex.NewErrorf("simulation mode not match with the contract: local:%v, remote:%v", agg.cfg.Simulation, isSimulation)
+	}
 
 	serveHttp, err := agg.startRpcServer(ctx)
 	if err != nil {
@@ -206,10 +219,15 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 			quorumThresholdPercentages[i] = types.QuorumThresholdPercentage(qn)
 		}
 		err = agg.blsAggregationService.InitializeNewTask(task.index, sh.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
-	} else {
-		err = agg.blsAggregationService.ProcessNewSignature(ctx, task.index, digest, req.Signature, req.OperatorId)
+		if err != nil {
+			return logex.Trace(err)
+		}
 	}
-	return err
+
+	if err := agg.blsAggregationService.ProcessNewSignature(ctx, task.index, digest, req.Signature, req.OperatorId); err != nil {
+		return logex.Trace(err)
+	}
+	return nil
 }
 
 func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServiceResp blsagg.BlsAggregationServiceResponse) error {
@@ -240,7 +258,7 @@ func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServic
 	if err != nil {
 		return logex.Trace(err)
 	}
-	logex.Info("confirm state: %v", tx.Hash())
+	logex.Infof("confirm state: %v", tx.Hash())
 	return nil
 }
 

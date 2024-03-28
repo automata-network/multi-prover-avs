@@ -112,3 +112,34 @@ The workflow is divided into two parts:
     - Operators sign the final state and send it together with signature to aggregator
     - Aggregator will fetch operator's validity before accepting its submission
     - Aggregator aggregate all the BLS signature and submit to the AVS service manager
+
+## Quick Start
+
+start a execution node
+```
+> anvil --fork-url ${holesky_rpc_endpoint} --fork-block-number 1218851
+```
+
+prepare the environment
+```
+> cp .env.example .env
+> # vim .env
+```
+
+deploy the avs contracts
+```
+> ./script/deploy.sh init_all --simulation
+> # this script will update the configure on config/operator.json and config/aggregator.json
+```
+
+run the aggregator
+```
+go run ./cmd/aggregator
+```
+
+run the operator
+```
+go run ./cmd/operator
+```
+
+

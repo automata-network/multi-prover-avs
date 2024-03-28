@@ -1,8 +1,14 @@
 {
-    "EcdsaPrivateKey": "c34e2b18ad57cf7b7b1c31e13491fdd0483d2f6004354080dca979db3ab4386c",
+    "EcdsaPrivateKey": "f6dc500a34373d7e8af2a4b0b2635253ce1bd92077ed86c24393fb01298abc1d",
     "EthHttpEndpoint": "http://localhost:8545",
     "EthWsEndpoint": "ws://localhost:8545",
     "ListenAddr": ":18545",
-    "AVSRegistryCoordinatorAddress": "0x7Eb78E05419416Fd31F6b365c1B9A1a7115e04cB",
+    "TimeToExpirySecs": 10,
+    "AVSRegistryCoordinatorAddress": "0xB6EcE648151B634772fc063914aa30cB9CBAA92e",
+    "OperatorStateRetrieverAddress": "0x16Ae21085dB5464E8De92041d3337832358DD1D0",
+    "MultiProverContractAddress": "0xc7E7a1DbB1Ec8C37c143312C13a7D58901A185E9",
+    "TEELivenessVerifierContractAddress": "0x8FA45F12d75A51c29457D3C8cD44189FeB35CA65",
+    "Simulation": true,
+    "ScanStartBlock": 1218851,
     "EigenMetricsIpPortAddress": ":15682"
 }

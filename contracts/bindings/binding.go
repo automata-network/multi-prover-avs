@@ -20,14 +20,12 @@ type Binding struct {
 }
 
 type StateHeader = MultiProverServiceManager.IMultiProverServiceManagerStateHeader
-
-func PackStateHeader(s *StateHeader) ([]byte, error) {
-	argTypes := MultiProverABI.Methods["confirmState"].Inputs[:1]
-	return argTypes.Pack(s)
-}
+type ReducedStateHeader = MultiProverServiceManager.IMultiProverServiceManagerReducedStateHeader
 
 func DigestStateHeader(s *StateHeader) (types.TaskResponseDigest, error) {
-	digest, err := PackStateHeader(s)
+	reduced := ReducedStateHeader{s.Identifier, s.Metadata, s.State, s.ReferenceBlockNumber}
+	argTypes := MultiProverABI.Methods["_hashReducedStateHeader"].Inputs[:1]
+	digest, err := argTypes.Pack(reduced)
 	if err != nil {
 		return types.TaskResponseDigest{}, logex.Trace(err)
 	}

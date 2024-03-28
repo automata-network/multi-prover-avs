@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"math/big"
 	"os"
 	"time"
@@ -27,6 +28,7 @@ import (
 type Config struct {
 	ProverURL     string
 	AggregatorURL string
+	Simulation    bool
 
 	TEELivenessVerifierAddr common.Address
 
@@ -38,10 +40,9 @@ type Config struct {
 	EthRpcUrl string
 	EthWsUrl  string
 
-	StrategyAddress               common.Address
-	RegistryCoordinatorAddress    common.Address
-	OperatorStateRetrieverAddress common.Address
-	EigenMetricsIpPortAddress     string
+	StrategyAddress            common.Address
+	RegistryCoordinatorAddress common.Address
+	EigenMetricsIpPortAddress  string
 }
 
 type TaskFetcher struct {
@@ -92,7 +93,7 @@ func NewOperator(cfg *Config) (*Operator, error) {
 		EthHttpUrl:                 cfg.EthRpcUrl,
 		EthWsUrl:                   cfg.EthWsUrl,
 		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress.String(),
-		OperatorStateRetrieverAddr: cfg.OperatorStateRetrieverAddress.String(),
+		OperatorStateRetrieverAddr: common.Address{}.String(),
 		AvsName:                    "multi-prover-operator",
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
@@ -100,12 +101,6 @@ func NewOperator(cfg *Config) (*Operator, error) {
 	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, elog)
 	if err != nil {
 		return nil, logex.Trace(err)
-	}
-
-	operatorId, err := eigenClients.AvsRegistryChainReader.GetOperatorId(nil, operatorAddress)
-	if err != nil {
-		logger.Error("Cannot get operator id", "err", err)
-		return nil, err
 	}
 
 	client, err := ethclient.Dial(cfg.EthRpcUrl)
@@ -117,15 +112,20 @@ func NewOperator(cfg *Config) (*Operator, error) {
 		return nil, logex.Trace(err)
 	}
 
+	aggClient, err := aggregator.NewClient(cfg.AggregatorURL)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+
 	operator := &Operator{
 		cfg:                 cfg,
-		operatorId:          operatorId,
 		operatorAddress:     operatorAddress,
 		blsKeyPair:          kp,
 		proverClient:        proverClient,
 		logger:              logger,
 		eigenClients:        eigenClients,
 		ecdsaKey:            ecdsaPrivateKey,
+		aggregator:          aggClient,
 		TEELivenessVerifier: TEELivenessVerifier,
 		ethclient:           client,
 	}
@@ -162,17 +162,23 @@ func (o *Operator) SaveBlock(uint64) error {
 // callback func for task fetcher
 func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	// parse the task
-	poe, err := o.proverClient.GetPoe(ctx, log.TxHash)
+	poe, err := o.proverGetPoe(ctx, log.TxHash)
 	if err != nil {
 		return logex.Trace(err)
 	}
+
+	blockNumber, err := o.ethclient.BlockNumber(ctx)
+	if err != nil {
+		return logex.Trace(err)
+	}
+
 	stateHeader := &aggregator.StateHeader{
 		Identifier:                 (*hexutil.Big)(big.NewInt(1)),
 		Metadata:                   nil,
 		State:                      poe.Pack(),
 		QuorumNumbers:              []byte{0},
 		QuorumThresholdPercentages: []byte{0},
-		ReferenceBlockNumber:       0, // TODO: fixme
+		ReferenceBlockNumber:       uint32(blockNumber),
 	}
 
 	digest, err := stateHeader.Digest()
@@ -194,10 +200,15 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 }
 
 func (o *Operator) Start(ctx context.Context) error {
-	if err := o.RegisterOperatorWithEigenlayer(ctx); err != nil {
+	isSimulation, err := o.TEELivenessVerifier.Simulation(nil)
+	if err != nil {
 		return logex.Trace(err)
 	}
-	if err := o.DepositIntoStrategy(ctx); err != nil {
+	if isSimulation != o.cfg.Simulation {
+		return logex.NewErrorf("simulation mode not match with the contract: local:%v, remote:%v", o.cfg.Simulation, isSimulation)
+	}
+
+	if err := o.RegisterOperatorWithEigenlayer(ctx); err != nil {
 		return logex.Trace(err)
 	}
 	if err := o.RegisterOperatorWithAvs(ctx); err != nil {
@@ -224,6 +235,39 @@ func (o *Operator) Start(ctx context.Context) error {
 		}
 	}
 
+	poe, err := o.proverGetPoe(ctx, common.Hash{})
+	if err != nil {
+		return logex.Trace(err)
+	}
+
+	blockNumber, err := o.ethclient.BlockNumber(ctx)
+	if err != nil {
+		return logex.Trace(err)
+	}
+
+	stateHeader := &aggregator.StateHeader{
+		Identifier:                 (*hexutil.Big)(big.NewInt(1)),
+		Metadata:                   nil,
+		State:                      poe.Pack(),
+		QuorumNumbers:              []byte{0},
+		QuorumThresholdPercentages: []byte{0},
+		ReferenceBlockNumber:       uint32(blockNumber), // TODO: fixme
+	}
+
+	digest, err := stateHeader.Digest()
+	if err != nil {
+		return logex.Trace(err)
+	}
+	sig := o.blsKeyPair.SignMessage(digest)
+
+	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
+		Task:       stateHeader,
+		Signature:  sig,
+		OperatorId: o.operatorId,
+	}); err != nil {
+		return logex.Trace(err)
+	}
+
 	return nil
 
 }
@@ -234,9 +278,36 @@ func (o *Operator) checkIsRegistered() error {
 		return logex.Trace(err)
 	}
 	if !operatorIsRegistered {
-		return logex.NewErrorf("operator is not registered. Registering operator using the operator-cli before starting operator")
+		return logex.NewErrorf("operator is not registered")
 	}
 	return nil
+}
+
+func (o *Operator) proverGetPoe(ctx context.Context, txHash common.Hash) (*Poe, error) {
+	if o.cfg.Simulation {
+		poe := &Poe{}
+		return poe, nil
+	}
+	poe, err := o.proverClient.GetPoe(ctx, txHash)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	return poe, nil
+}
+
+func (o *Operator) proverGetAttestationReport(ctx context.Context, pubkey []byte) ([]byte, error) {
+	if o.cfg.Simulation {
+		quote, err := generateSimulationQuote(pubkey)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		return quote, nil
+	}
+	quote, err := o.proverClient.GenerateAttestaionReport(ctx, pubkey)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	return quote, nil
 }
 
 func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
@@ -255,7 +326,7 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 		return nil
 	}
 
-	report, err := o.proverClient.GenerateAttestaionReport(ctx, pubkeyBytes)
+	report, err := o.proverGetAttestationReport(ctx, pubkeyBytes)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -275,6 +346,7 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 	if _, err := utils.WaitTx(ctx, o.ethclient, tx, nil); err != nil {
 		return logex.Trace(err)
 	}
+	logex.Info("registered in TEELivenessVerifier: %v", tx.Hash())
 	return nil
 }
 
@@ -303,7 +375,6 @@ func (o *Operator) RegisterOperatorWithEigenlayer(ctx context.Context) error {
 }
 
 func (o *Operator) DepositIntoStrategy(ctx context.Context) error {
-	// strategyAddr common.Address, amount *big.Int
 	_, tokenAddr, err := o.eigenClients.ElChainReader.GetStrategyAndUnderlyingToken(nil, o.cfg.StrategyAddress)
 	if err != nil {
 		return logex.Trace(err, "Failed to fetch strategy contract")
@@ -321,20 +392,42 @@ func (o *Operator) DepositIntoStrategy(ctx context.Context) error {
 }
 
 func (o *Operator) RegisterOperatorWithAvs(ctx context.Context) error {
+	operatorId, err := o.eigenClients.AvsRegistryChainReader.GetOperatorId(nil, o.operatorAddress)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	o.operatorId = operatorId
+
+	if operatorId != [32]byte{} {
+		return nil
+	}
+
+	if err := o.DepositIntoStrategy(ctx); err != nil {
+		return logex.Trace(err)
+	}
+
 	quorumNumbers := []eigenSdkTypes.QuorumNum{0}
 	socket := "Not Needed"
-	operatorToAvsRegistrationSigSalt := [32]byte{123}
+	operatorToAvsRegistrationSigSalt := [32]byte{}
+	if _, err := rand.Read(operatorToAvsRegistrationSigSalt[:]); err != nil {
+		return logex.Trace(err)
+	}
 	sigValidForSeconds := int64(1_000_000)
 
 	operatorToAvsRegistrationSigExpiry := big.NewInt(time.Now().Unix() + sigValidForSeconds)
 
-	_, err := o.eigenClients.AvsRegistryChainWriter.RegisterOperatorInQuorumWithAVSRegistryCoordinator(
+	if _, err := o.eigenClients.AvsRegistryChainWriter.RegisterOperatorInQuorumWithAVSRegistryCoordinator(
 		ctx, o.ecdsaKey, operatorToAvsRegistrationSigSalt, operatorToAvsRegistrationSigExpiry, o.blsKeyPair, quorumNumbers, socket,
-	)
-	if err != nil {
+	); err != nil {
 		return logex.Trace(err)
 	}
 	o.logger.Infof("Registered operator with avs registry coordinator.")
+
+	operatorId, err = o.eigenClients.AvsRegistryChainReader.GetOperatorId(nil, o.operatorAddress)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	o.operatorId = operatorId
 
 	return nil
 }
