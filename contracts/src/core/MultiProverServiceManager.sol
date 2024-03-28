@@ -140,11 +140,11 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         teeQuorums[teeQuorum.quorumNumber] = teeQuorum;
     }
 
-    function removeTEEQuorum(TEEQuorum memory teeQuorum) external onlyOwner {
-        require(teeQuorums[teeQuorum.quorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.removeTEEQuorum: tee quorum does not exist");
-        require(quorumIdToCommitteeId[teeQuorum.quorumNumber] == 0, "MultiProverServiceManager.removeTEEQuorum: tee quorum is in use");
+    function removeTEEQuorum(uint8 quorumNumber) external onlyOwner {
+        require(teeQuorums[quorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.removeTEEQuorum: tee quorum does not exist");
+        require(quorumIdToCommitteeId[quorumNumber] == 0, "MultiProverServiceManager.removeTEEQuorum: tee quorum is in use");
 
-        delete teeQuorums[teeQuorum.quorumNumber];
+        delete teeQuorums[quorumNumber];
     }
 
     function setStateConfirmer(address _stateConfirmer) external onlyOwner {

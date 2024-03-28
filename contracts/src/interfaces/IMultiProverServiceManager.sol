@@ -95,5 +95,5 @@ interface IMultiProverServiceManager is IServiceManager {
 
     function addTEEQuorum(TEEQuorum memory teeQuorum) external;
 
-    function removeTEEQuorum(TEEQuorum memory teeQuorum) external;
+    function removeTEEQuorum(uint8 quorumNumber) external;
 }
