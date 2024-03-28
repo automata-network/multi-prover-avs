@@ -1,0 +1,7 @@
+{
+  "AutomataDcapV3Attestation": "0x62BE6dfFd48C74199344a6f1bF3e006791900678",
+  "PEMCertChainLib": "0x74Ec6bf0615B0E78A642819175da9A7b8fE413Ea",
+  "SigVerifyLib": "0x018810423187104733Edb1C653a1c80114105b7D",
+  "TEELivenessVerifier": "0x8A0Dc55cb68d44707C6d7CddfB1Ac71bbD4eDE22",
+  "object": "tee liveness verifier contract"
+}

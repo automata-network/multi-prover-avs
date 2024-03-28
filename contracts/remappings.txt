@@ -1,5 +1,8 @@
 @openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/
 @openzeppelin/=lib/openzeppelin-contracts/
+@dcap-v3-attestation/=dcap-v3-attestation/contracts
+p256-verifier/=dcap-v3-attestation/lib/p256-verifier/src
+solady/=dcap-v3-attestation/lib/solady/
 eigenlayer-contracts/=lib/eigenlayer-middleware/lib/eigenlayer-contracts/
 eigenlayer-middleware/=lib/eigenlayer-middleware/src/
 forge-std/=lib/forge-std/src/

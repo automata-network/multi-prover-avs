@@ -1,8 +1,9 @@
 {
-  "blsApkRegistry": "0xDC444122Ed0D98B510A957AC80B7c8a2A1315FBb",
-  "indexRegistry": "0xea2F51103ae98057A696A7E9F7705104eF189c91",
-  "multiProverServiceManager": "0xa6F5921DC25A62b4fCE36F523ad28aD4ad06d818",
+  "blsApkRegistry": "0x64977F7224a26FFC30505f61f1732a6D585A2596",
+  "indexRegistry": "0x3c6C3f48A35d1162CD0a230484BCB36a2B618FeE",
+  "multiProverServiceManager": "0xD762095c46774329368b951354116a62E0565bC9",
   "object": "multi-prover avs contracts deployment output",
-  "registryCoordinator": "0x91E328fAC3659345C22BC6bD5217F3bDaf70A443",
-  "stakeRegistry": "0x3fA07F4E9F98e3F83ccDbdEF2A152c7dE23E65d3"
+  "operatorStateRetriever": "0x1e3263A44dF8Dcb1286Df66Dd8ca621bFa35E938",
+  "registryCoordinator": "0x23b0000F209e6f964a0620dd24920eA151aE25B1",
+  "stakeRegistry": "0x3108D920C2a8E9BB37BC30A6a40b8FBfB6a3a22c"
 }

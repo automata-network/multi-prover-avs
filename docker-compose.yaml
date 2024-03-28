@@ -1,0 +1,30 @@
+version: '3'
+
+networks:
+  multi-prover-network:
+    name: multi-prover-network
+    driver: bridge
+
+services:
+  aggregator:
+    image: ghcr.io/automata-network/multi-prover-avs/aggregator:latest
+    container_name: multi-prover-aggregator
+    command: -c config/aggregator-docker-compose.json
+    volumes:
+      - ./config:/config
+    working_dir: /
+    networks:
+      - multi-prover-network
+
+  operator:
+    image: ghcr.io/automata-network/multi-prover-avs/operator:latest
+    container_name: multi-prover-operator
+    command: -c config/operator-docker-compose.json
+    depends_on:
+      aggregator:
+        condition: service_started
+    volumes:
+      - ./config:/config
+    working_dir: /
+    networks:
+      - multi-prover-network

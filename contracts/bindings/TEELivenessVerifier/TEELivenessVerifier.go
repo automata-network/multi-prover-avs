@@ -37,7 +37,7 @@ type TEELivenessVerifierPubkey struct {
 
 // TEELivenessVerifierMetaData contains all meta data concerning the TEELivenessVerifier contract.
 var TEELivenessVerifierMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"attestationAddr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_chainId\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"attestValiditySeconds\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"attestedProvers\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"x\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"y\",\"type\":\"bytes32\"}],\"internalType\":\"structTEELivenessVerifier.Pubkey\",\"name\":\"pubkey\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"time\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"attestedReports\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"val\",\"type\":\"uint256\"}],\"name\":\"changeAttestValiditySeconds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"changeOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dcapAttestation\",\"outputs\":[{\"internalType\":\"contractIAttestation\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"layer2ChainId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"report\",\"type\":\"bytes\"}],\"name\":\"submitLivenessProof\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"threshold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"pubkeyX\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"pubkeyY\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"verifyAttestation\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"pubkeyX\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"pubkeyY\",\"type\":\"bytes32\"}],\"name\":\"verifyLivenessProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_mrenclave\",\"type\":\"bytes32\"}],\"name\":\"verifyMrEnclave\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_mrsigner\",\"type\":\"bytes32\"}],\"name\":\"verifyMrSigner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_attestationAddr\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_simulation\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"attestValiditySeconds\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"attestedProvers\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"x\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"y\",\"type\":\"bytes32\"}],\"internalType\":\"structTEELivenessVerifier.Pubkey\",\"name\":\"pubkey\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"time\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"attestedReports\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"val\",\"type\":\"uint256\"}],\"name\":\"changeAttestValiditySeconds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"changeOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dcapAttestation\",\"outputs\":[{\"internalType\":\"contractIAttestation\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"simulation\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"_report\",\"type\":\"bytes\"}],\"name\":\"submitLivenessProof\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"pubkeyX\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"pubkeyY\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"verifyAttestation\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"pubkeyX\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"pubkeyY\",\"type\":\"bytes32\"}],\"name\":\"verifyLivenessProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_mrenclave\",\"type\":\"bytes32\"}],\"name\":\"verifyMrEnclave\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_mrsigner\",\"type\":\"bytes32\"}],\"name\":\"verifyMrSigner\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // TEELivenessVerifierABI is the input ABI used to generate the binding from.
@@ -324,37 +324,6 @@ func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) DcapAttestation() 
 	return _TEELivenessVerifier.Contract.DcapAttestation(&_TEELivenessVerifier.CallOpts)
 }
 
-// Layer2ChainId is a free data retrieval call binding the contract method 0x03c7f4af.
-//
-// Solidity: function layer2ChainId() view returns(uint256)
-func (_TEELivenessVerifier *TEELivenessVerifierCaller) Layer2ChainId(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _TEELivenessVerifier.contract.Call(opts, &out, "layer2ChainId")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// Layer2ChainId is a free data retrieval call binding the contract method 0x03c7f4af.
-//
-// Solidity: function layer2ChainId() view returns(uint256)
-func (_TEELivenessVerifier *TEELivenessVerifierSession) Layer2ChainId() (*big.Int, error) {
-	return _TEELivenessVerifier.Contract.Layer2ChainId(&_TEELivenessVerifier.CallOpts)
-}
-
-// Layer2ChainId is a free data retrieval call binding the contract method 0x03c7f4af.
-//
-// Solidity: function layer2ChainId() view returns(uint256)
-func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) Layer2ChainId() (*big.Int, error) {
-	return _TEELivenessVerifier.Contract.Layer2ChainId(&_TEELivenessVerifier.CallOpts)
-}
-
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
 // Solidity: function owner() view returns(address)
@@ -386,35 +355,35 @@ func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) Owner() (common.Ad
 	return _TEELivenessVerifier.Contract.Owner(&_TEELivenessVerifier.CallOpts)
 }
 
-// Threshold is a free data retrieval call binding the contract method 0x42cde4e8.
+// Simulation is a free data retrieval call binding the contract method 0x95f76bdd.
 //
-// Solidity: function threshold() view returns(uint256)
-func (_TEELivenessVerifier *TEELivenessVerifierCaller) Threshold(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function simulation() view returns(bool)
+func (_TEELivenessVerifier *TEELivenessVerifierCaller) Simulation(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
-	err := _TEELivenessVerifier.contract.Call(opts, &out, "threshold")
+	err := _TEELivenessVerifier.contract.Call(opts, &out, "simulation")
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
 
 }
 
-// Threshold is a free data retrieval call binding the contract method 0x42cde4e8.
+// Simulation is a free data retrieval call binding the contract method 0x95f76bdd.
 //
-// Solidity: function threshold() view returns(uint256)
-func (_TEELivenessVerifier *TEELivenessVerifierSession) Threshold() (*big.Int, error) {
-	return _TEELivenessVerifier.Contract.Threshold(&_TEELivenessVerifier.CallOpts)
+// Solidity: function simulation() view returns(bool)
+func (_TEELivenessVerifier *TEELivenessVerifierSession) Simulation() (bool, error) {
+	return _TEELivenessVerifier.Contract.Simulation(&_TEELivenessVerifier.CallOpts)
 }
 
-// Threshold is a free data retrieval call binding the contract method 0x42cde4e8.
+// Simulation is a free data retrieval call binding the contract method 0x95f76bdd.
 //
-// Solidity: function threshold() view returns(uint256)
-func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) Threshold() (*big.Int, error) {
-	return _TEELivenessVerifier.Contract.Threshold(&_TEELivenessVerifier.CallOpts)
+// Solidity: function simulation() view returns(bool)
+func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) Simulation() (bool, error) {
+	return _TEELivenessVerifier.Contract.Simulation(&_TEELivenessVerifier.CallOpts)
 }
 
 // VerifyAttestation is a free data retrieval call binding the contract method 0xa65542ca.
@@ -585,21 +554,21 @@ func (_TEELivenessVerifier *TEELivenessVerifierTransactorSession) ChangeOwner(_n
 
 // SubmitLivenessProof is a paid mutator transaction binding the contract method 0x6cad7294.
 //
-// Solidity: function submitLivenessProof(bytes report) returns()
-func (_TEELivenessVerifier *TEELivenessVerifierTransactor) SubmitLivenessProof(opts *bind.TransactOpts, report []byte) (*types.Transaction, error) {
-	return _TEELivenessVerifier.contract.Transact(opts, "submitLivenessProof", report)
+// Solidity: function submitLivenessProof(bytes _report) returns()
+func (_TEELivenessVerifier *TEELivenessVerifierTransactor) SubmitLivenessProof(opts *bind.TransactOpts, _report []byte) (*types.Transaction, error) {
+	return _TEELivenessVerifier.contract.Transact(opts, "submitLivenessProof", _report)
 }
 
 // SubmitLivenessProof is a paid mutator transaction binding the contract method 0x6cad7294.
 //
-// Solidity: function submitLivenessProof(bytes report) returns()
-func (_TEELivenessVerifier *TEELivenessVerifierSession) SubmitLivenessProof(report []byte) (*types.Transaction, error) {
-	return _TEELivenessVerifier.Contract.SubmitLivenessProof(&_TEELivenessVerifier.TransactOpts, report)
+// Solidity: function submitLivenessProof(bytes _report) returns()
+func (_TEELivenessVerifier *TEELivenessVerifierSession) SubmitLivenessProof(_report []byte) (*types.Transaction, error) {
+	return _TEELivenessVerifier.Contract.SubmitLivenessProof(&_TEELivenessVerifier.TransactOpts, _report)
 }
 
 // SubmitLivenessProof is a paid mutator transaction binding the contract method 0x6cad7294.
 //
-// Solidity: function submitLivenessProof(bytes report) returns()
-func (_TEELivenessVerifier *TEELivenessVerifierTransactorSession) SubmitLivenessProof(report []byte) (*types.Transaction, error) {
-	return _TEELivenessVerifier.Contract.SubmitLivenessProof(&_TEELivenessVerifier.TransactOpts, report)
+// Solidity: function submitLivenessProof(bytes _report) returns()
+func (_TEELivenessVerifier *TEELivenessVerifierTransactorSession) SubmitLivenessProof(_report []byte) (*types.Transaction, error) {
+	return _TEELivenessVerifier.Contract.SubmitLivenessProof(&_TEELivenessVerifier.TransactOpts, _report)
 }

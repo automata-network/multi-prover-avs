@@ -19,21 +19,19 @@ contract TEELivenessVerifier {
     mapping(bytes32 => Prover) public attestedProvers; // prover's pubkey => attestedTime
 
     uint256 public attestValiditySeconds = 3600;
+    bool public immutable simulation;
 
     IAttestation public immutable dcapAttestation;
-    uint256 public immutable layer2ChainId;
-
-    uint256 public threshold = 1; // This is an example threshold. Adjust this value as needed.
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not authorized");
         _;
     }
 
-    constructor(address attestationAddr, uint256 _chainId) {
+    constructor(address _attestationAddr, bool _simulation) {
         owner = msg.sender;
-        dcapAttestation = IAttestation(attestationAddr);
-        layer2ChainId = _chainId;
+        dcapAttestation = IAttestation(_attestationAddr);
+        simulation = _simulation;
     }
 
     function changeOwner(address _newOwner) public onlyOwner {
@@ -52,11 +50,11 @@ contract TEELivenessVerifier {
         return dcapAttestation.verifyMrSigner(_mrsigner);
     }
 
-    function submitLivenessProof(bytes calldata report) public {
+    function submitLivenessProof(bytes calldata _report) public {
         (bool succ, bytes memory reportData) = dcapAttestation
-            .verifyAttestation(report);
-        require(succ, "attestation report validation fail");
-        bytes32 reportHash = keccak256(report);
+            .verifyAttestation(_report);
+        require(simulation || succ, "attestation report validation fail");
+        bytes32 reportHash = keccak256(_report);
         require(!attestedReports[reportHash], "report is already used");
 
         (bytes32 x, bytes32 y) = splitBytes64(reportData);

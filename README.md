@@ -4,6 +4,8 @@
 - [AVS Task Description](#avs-task-description)
 - [AVS Architecture](#avs-architecture)
 - [AVS Workflow](#avs-workflow)
+- [Quick Start](#quick-start)
+
 ## About Multi-Prover AVS
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
 ![Automata Multi-Prover AVS Design](/assets/multiprover-design.png)
@@ -112,3 +114,56 @@ The workflow is divided into two parts:
     - Operators sign the final state and send it together with signature to aggregator
     - Aggregator will fetch operator's validity before accepting its submission
     - Aggregator aggregate all the BLS signature and submit to the AVS service manager
+
+## Quick Start
+
+Steps for running the multi-prover-avs in simulation node(without the SGX prover):
+
+1. Start a execution node
+```
+> anvil --fork-url ${holesky_rpc_endpoint} --fork-block-number 1218851
+```
+
+2. Prepare the environment
+```
+> cp .env.example .env
+> # vim .env
+```
+
+3. Deploy the avs contracts
+```
+> ./script/deploy.sh init_all --simulation
+> # this script will update the configure on config/operator.json and config/aggregator.json
+```
+
+4. Run the aggregator
+```
+go run ./cmd/aggregator
+```
+
+5. Run the operator
+```
+go run ./cmd/operator
+```
+
+### With Docker compose
+
+1. build image
+```
+> ./script/docker.sh build
+```
+
+2. init state
+```
+> ./scripts/docker.sh init_state --simulation
+```
+
+3. start aggregator & operator
+```
+> ./scripts/docker.sh run
+```
+
+3. stop all
+```
+> ./scripts/docker.sh stop
+```
