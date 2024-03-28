@@ -153,12 +153,17 @@ go run ./cmd/operator
 > ./script/docker.sh build
 ```
 
-1. init state
+2. init state
 ```
 > ./scripts/docker.sh init_state --simulation
 ```
 
-2. start aggregator & operator
+3. start aggregator & operator
 ```
-> docker compose up
+> ./scripts/docker.sh run
+```
+
+3. stop all
+```
+> ./scripts/docker.sh stop
 ```
