@@ -1,11 +1,15 @@
 package operator
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/binary"
+	"io"
 	"math/big"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
@@ -13,6 +17,7 @@ import (
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/logex"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -46,9 +51,10 @@ type Config struct {
 }
 
 type TaskFetcher struct {
-	Endpoint  string
-	Topics    [][]common.Hash
-	Addresses []common.Address
+	Endpoint   string
+	Topics     [][]common.Hash
+	Addresses  []common.Address
+	OffsetFile string
 }
 
 type Operator struct {
@@ -65,6 +71,7 @@ type Operator struct {
 	proverClient *ProverClient
 	eigenClients *clients.Clients
 	taskFetcher  *LogTracer
+	offset       *os.File
 
 	ethclient           *ethclient.Client
 	TEELivenessVerifier *TEELivenessVerifier.TEELivenessVerifier
@@ -136,6 +143,12 @@ func NewOperator(cfg *Config) (*Operator, error) {
 			return nil, logex.Trace(err)
 		}
 
+		offsetFile, err := os.OpenFile(cfg.TaskFetcher.OffsetFile, os.O_CREATE|os.O_RDWR, 0644)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+
+		operator.offset = offsetFile
 		operator.taskFetcher = NewLogTracer(taskFetcherClient, &LogTracerConfig{
 			Id:        "operator-log-tracer",
 			Wait:      5,
@@ -150,22 +163,40 @@ func NewOperator(cfg *Config) (*Operator, error) {
 }
 
 // callback func for task fetcher
-func (o *Operator) GetBlock() (uint64, error) {
-	return 0, nil
+func (h *Operator) GetBlock() (uint64, error) {
+	data := make([]byte, 16)
+	n, err := h.offset.ReadAt(data, 0)
+	if n == 0 {
+		if err == io.EOF {
+			return 0, nil
+		}
+		return 0, logex.Trace(err, n)
+	}
+	data = bytes.Trim(data[:n], "\x00\r\n ")
+
+	number, err := strconv.ParseInt(string(data), 10, 64)
+	if err != nil {
+		return 0, logex.Trace(err)
+	}
+	return uint64(number), nil
 }
 
 // callback func for task fetcher
-func (o *Operator) SaveBlock(uint64) error {
-	return nil
+func (h *Operator) SaveBlock(offset uint64) error {
+	data := []byte(strconv.FormatUint(offset, 10))
+	_, err := h.offset.WriteAt(data, 0)
+	return err
 }
 
 // callback func for task fetcher
 func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	// parse the task
-	poe, err := o.proverGetPoe(ctx, log.TxHash)
+	poe, err := o.proverGetPoe(ctx, log.TxHash, log.Topics)
 	if err != nil {
 		return logex.Trace(err)
 	}
+
+	logex.Pretty(poe)
 
 	blockNumber, err := o.ethclient.BlockNumber(ctx)
 	if err != nil {
@@ -229,47 +260,11 @@ func (o *Operator) Start(ctx context.Context) error {
 		return logex.Trace(err)
 	}
 
-	if o.taskFetcher != nil {
-		if err := o.taskFetcher.Run(ctx); err != nil {
-			return logex.Trace(err)
-		}
-	}
-
-	poe, err := o.proverGetPoe(ctx, common.Hash{})
-	if err != nil {
-		return logex.Trace(err)
-	}
-
-	blockNumber, err := o.ethclient.BlockNumber(ctx)
-	if err != nil {
-		return logex.Trace(err)
-	}
-
-	stateHeader := &aggregator.StateHeader{
-		Identifier:                 (*hexutil.Big)(big.NewInt(1)),
-		Metadata:                   nil,
-		State:                      poe.Pack(),
-		QuorumNumbers:              []byte{0},
-		QuorumThresholdPercentages: []byte{0},
-		ReferenceBlockNumber:       uint32(blockNumber), // TODO: fixme
-	}
-
-	digest, err := stateHeader.Digest()
-	if err != nil {
-		return logex.Trace(err)
-	}
-	sig := o.blsKeyPair.SignMessage(digest)
-
-	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
-		Task:       stateHeader,
-		Signature:  sig,
-		OperatorId: o.operatorId,
-	}); err != nil {
+	if err := o.taskFetcher.Run(ctx); err != nil {
 		return logex.Trace(err)
 	}
 
 	return nil
-
 }
 
 func (o *Operator) checkIsRegistered() error {
@@ -283,9 +278,54 @@ func (o *Operator) checkIsRegistered() error {
 	return nil
 }
 
-func (o *Operator) proverGetPoe(ctx context.Context, txHash common.Hash) (*Poe, error) {
+var ABI = func() abi.ABI {
+	ty := `[{"inputs":[{"internalType":"uint8","name":"_version","type":"uint8"},{"internalType":"bytes","name":"_parentBatchHeader","type":"bytes"},{"internalType":"bytes[]","name":"_chunks","type":"bytes[]"},{"internalType":"bytes","name":"_skippedL1MessageBitmap","type":"bytes"}],"name":"commitBatch","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
+	result, err := abi.JSON(bytes.NewReader([]byte(ty)))
+	if err != nil {
+		panic(err)
+	}
+	return result
+}()
+
+func (o *Operator) proverGetPoe(ctx context.Context, txHash common.Hash, topics []common.Hash) (*Poe, error) {
 	if o.cfg.Simulation {
-		poe := &Poe{}
+
+		tx, _, err := o.taskFetcher.source.TransactionByHash(ctx, txHash)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		args, err := ABI.Methods["commitBatch"].Inputs.Unpack(tx.Data()[4:])
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+
+		startBlock := int64(0)
+		endBlock := int64(0)
+		for _, chunk := range args[2].([][]byte) {
+			for i := 0; i < int(chunk[0]); i++ {
+				blockNumber := int64(binary.BigEndian.Uint64(chunk[1:][i*60 : i*60+8]))
+				if startBlock == 0 {
+					startBlock = blockNumber
+				} else {
+					endBlock = blockNumber
+				}
+			}
+		}
+
+		startBlockHeader, err := o.taskFetcher.source.HeaderByNumber(ctx, big.NewInt(startBlock))
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		endBlockHeader, err := o.taskFetcher.source.HeaderByNumber(ctx, big.NewInt(endBlock))
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+
+		poe := &Poe{
+			BatchHash:     topics[2],
+			NewStateRoot:  endBlockHeader.Root,
+			PrevStateRoot: startBlockHeader.Root,
+		}
 		return poe, nil
 	}
 	poe, err := o.proverClient.GetPoe(ctx, txHash)

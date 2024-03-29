@@ -7,6 +7,14 @@
     "EigenMetricsIpPortAddress": ":15682",
     "AggregatorURL": "http://localhost:18545",
     "simulation": true,
+    "TaskFetcher": {
+        "OffsetFile": "config/operator_task_fetcher.offset",
+        "Endpoint": "https://rpc.sepolia.org",
+        "Topics": [["0x2c32d4ae151744d0bf0b9464a3e897a1d17ed2f1af71f7c9a75f12ce0d28238f"]],
+        "Addresses": [
+            "0x2D567EcE699Eabe5afCd141eDB7A4f2D0D6ce8a0"
+        ]
+    },
 
     "RegistryCoordinatorAddress": "0x23b0000F209e6f964a0620dd24920eA151aE25B1",
     "TEELivenessVerifierAddr": "0x8A0Dc55cb68d44707C6d7CddfB1Ac71bbD4eDE22",
