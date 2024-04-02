@@ -26,6 +26,13 @@ function _set_key() {
 	cat /tmp/tmp_set_key > $file
 }
 
+function update_uri() {
+	PRIVATE_KEY=$(_aggregator_key) \
+	METADATA_URI=https://raw.githubusercontent.com/automata-network/multi-prover-avs-metadata/main/metadata.json \
+	SERVICE_MANAGER_ADDRESS=$(_get_key $AVS_DEPLOY .multiProverServiceManager) \
+	_script script/UpdateAVSMetadataURI.s.sol
+}
+
 function deploy_attestation() {
 	SIMULATION=false
 	if [[ "$1" == "--simulation" ]]; then

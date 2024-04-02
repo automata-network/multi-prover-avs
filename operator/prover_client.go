@@ -50,11 +50,12 @@ func NewProverClient(url string) (*ProverClient, error) {
 }
 
 type Poe struct {
-	BatchHash      common.Hash
-	StateHash      common.Hash
-	PrevStateRoot  common.Hash
-	NewStateRoot   common.Hash
-	WithdrawalRoot common.Hash
+	BatchHash      common.Hash   `json:"batch_hash"`
+	StateHash      common.Hash   `json:"state_hash"`
+	PrevStateRoot  common.Hash   `json:"prev_state_root"`
+	NewStateRoot   common.Hash   `json:"new_state_root"`
+	WithdrawalRoot common.Hash   `json:"withdrawal_root"`
+	Signature      hexutil.Bytes `json:"signature"`
 }
 
 func (p *Poe) Pack() []byte {
