@@ -22,7 +22,7 @@ function _set_key() {
 		echo "key $key not found in $file"
 		return 1
 	fi
-	sed "s/\\\"$key\\\": \\\".*\\\"/\\\"$key\": \\\"$value\\\"/g" $file > /tmp/tmp_set_key
+	sed "s!\\\"$key\\\": \\\".*\\\"!\\\"$key\": \\\"$value\\\"!g" $file > /tmp/tmp_set_key
 	cat /tmp/tmp_set_key > $file
 }
 
@@ -107,9 +107,20 @@ function topup_eth() {
 	TARGET=$TARGET VALUE=$VALUE _script script/EthTransfer.s.sol
 }
 
+function update_config() {
+	_set_key config/aggregator.json EcdsaPrivateKey $AGGREGATOR_ECDSA_PRIVATE_KEY
+	_set_key config/operator.json EcdsaPrivateKey $OPERATOR_ECDSA_PRIVATE_KEY
+	_set_key config/operator.json BlsPrivateKey $OPERATOR_BLS_PRIVATE_KEY
+	_set_key config/aggregator.json EthHttpEndpoint $RPC_URL
+	_set_key config/aggregator.json EthWsEndpoint $RPC_WS
+	_set_key config/operator.json EthRpcUrl $RPC_URL
+	_set_key config/operator.json EthWsUrl $RPC_WS
+}
+
 function init_all() {
 	# usage: 
 	#   $0 init_all --simulation
+	update_config
 	topup_eth operator
 	topup_eth aggregator
 	topup_steth
