@@ -176,8 +176,10 @@ go run ./cmd/operator
 2. Install [Docker](https://docs.docker.com/engine/install/)
 
 3. Prepare the repo
+```
 git clone https://github.com/automata-network/multi-prover-avs
 cd multi-prover-avs
+```
 
 4. Update the `.env` file. Operators need to fill up variables marked as TODO.
 ```
