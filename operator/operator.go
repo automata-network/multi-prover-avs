@@ -34,6 +34,7 @@ type Config struct {
 	ProverURL     string
 	AggregatorURL string
 	Simulation    bool
+	Identifier    int64
 
 	TEELivenessVerifierAddr common.Address
 
@@ -78,6 +79,9 @@ type Operator struct {
 }
 
 func NewOperator(cfg *Config) (*Operator, error) {
+	if cfg.Identifier == 0 {
+		cfg.Identifier = 1
+	}
 	kp, err := bls.NewKeyPairFromString(cfg.BlsPrivateKey)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -204,7 +208,7 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	}
 
 	stateHeader := &aggregator.StateHeader{
-		Identifier:                 (*hexutil.Big)(big.NewInt(1)),
+		Identifier:                 (*hexutil.Big)(big.NewInt(o.cfg.Identifier)),
 		Metadata:                   nil,
 		State:                      poe.Pack(),
 		QuorumNumbers:              []byte{0},

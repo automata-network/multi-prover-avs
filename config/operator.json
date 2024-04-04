@@ -16,8 +16,8 @@
         ]
     },
 
-    "RegistryCoordinatorAddress": "0x23b0000F209e6f964a0620dd24920eA151aE25B1",
-    "TEELivenessVerifierAddr": "0x8A0Dc55cb68d44707C6d7CddfB1Ac71bbD4eDE22",
+    "RegistryCoordinatorAddress": "0xceC22CaD5d6Ab541C068C88bb1F252F7CbA903d1",
+    "TEELivenessVerifierAddr": "0x35f9c0aAB581FEF086f58557fa5725693E94B227",
     "strategyAddress": "0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3",
 
     "":""
