@@ -1,0 +1,55 @@
+name: Publish docker images to GHCR when a new release is created
+
+on:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  REPO_NAME: ${{ github.repository }}
+  AGGREGATOR_NAME: aggregator
+  OPERATOR_NAME: operator
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repo at commit tagged on release.
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.target_commitish }}
+
+      - name: Login to GHCR registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ success() }}
+
+      - name: Set Tag Name
+        id: set_tag
+        run: echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        if: ${{ success() }}
+
+      - name: Build and push aggregator image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./cmd/aggregator/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.AGGREGATOR_NAME }}:${{ steps.set_tag.outputs.tag }} , ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.AGGREGATOR_NAME }}:latest 
+        if: ${{ success() }}
+
+      - name: Build and push operator image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./cmd/operator/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.OPERATOR_NAME }}:${{ steps.set_tag.outputs.tag }} , ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.OPERATOR_NAME }}:latest 
+        if: ${{ success() }}
+
