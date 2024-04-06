@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import {IMultiProverServiceManager} from "../interfaces/IMultiProverServiceManager.sol";
 
 abstract contract MultiProverServiceManagerStorage is IMultiProverServiceManager {
     /// @notice The pause flag for submitting state transitions
     uint8 public constant PAUSED_SUBMIT_STATE = 0;
+    /// @notice The pause flag for operator registration
+    uint8 public constant PAUSED_OPERTOR_REGISTRATION = 1;
 
     uint256 public constant THRESHOLD_DENOMINATOR = 100;
     
@@ -23,4 +27,8 @@ abstract contract MultiProverServiceManagerStorage is IMultiProverServiceManager
 
     /// @notice the address that is permissioned to submit state transitions
     address public stateConfirmer;
+
+    EnumerableSet.AddressSet internal operatorWhitelist;
+
+    bool public poaEnabled;
 }
