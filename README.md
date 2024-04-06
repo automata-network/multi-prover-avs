@@ -7,7 +7,6 @@
 - [TEE Committee and Quorum](#tee-committee-and-quorum)
 - [Quick Start](#quick-start)
 
->>>>>>> main
 ## About Multi-Prover AVS
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
 ![Automata Multi-Prover AVS Design](/assets/multiprover-design.png)
