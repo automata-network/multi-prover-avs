@@ -5,6 +5,9 @@
 - [AVS Architecture](#avs-architecture)
 - [AVS Workflow](#avs-workflow)
 - [TEE Committee and Quorum](#tee-committee-and-quorum)
+- [Quick Start](#quick-start)
+
+>>>>>>> main
 ## About Multi-Prover AVS
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
 ![Automata Multi-Prover AVS Design](/assets/multiprover-design.png)
@@ -120,3 +123,56 @@ The workflow is divided into two parts:
 **TEE Committee** is a set of quorum that is responsible to handle a specific type of task. For example, proving the root state of scroll at a particular block height. Operators do not need to actively choose a committee, but automatically belong to a committee by joining quorums. The introduction of `TEE Committee` facilitates a more organized structuring of operators and tasks. And lays the groundwork for future enhancements, including the rewarding mechanism and constraints of stake distribution across quorums.
 
 The concept of a **TEE Quorum** aligns with the quorum definition utilized by Eigenlayer, but each quorum is associated with a TEE platform, such as Intel SGX. Each quorum belongs to a committee, operators can choose to join any quorum, But only the votes from operators possessing the requisite attestation will be accepted by the aggregator.
+
+## Quick Start
+
+Steps for running the multi-prover-avs in simulation node(without the SGX prover):
+
+1. Start a execution node
+```
+> anvil --fork-url ${holesky_rpc_endpoint} --fork-block-number 1218851
+```
+
+2. Prepare the environment
+```
+> cp .env.example .env
+> # vim .env
+```
+
+3. Deploy the avs contracts
+```
+> ./script/deploy.sh init_all --simulation
+> # this script will update the configure on config/operator.json and config/aggregator.json
+```
+
+4. Run the aggregator
+```
+go run ./cmd/aggregator
+```
+
+5. Run the operator
+```
+go run ./cmd/operator
+```
+
+### With Docker compose
+
+1. build image
+```
+> ./script/docker.sh build
+```
+
+2. init state
+```
+> ./scripts/docker.sh init_state --simulation
+```
+
+3. start aggregator & operator
+```
+> ./scripts/docker.sh run
+```
+
+3. stop all
+```
+> ./scripts/docker.sh stop
+```

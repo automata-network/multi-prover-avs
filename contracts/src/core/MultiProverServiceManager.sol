@@ -221,7 +221,8 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         return keccak256(abi.encode(stateHeader));
     }
 
-    function _hashReducedStateHeader(ReducedStateHeader memory reducedStateHeader) internal pure returns (bytes32) {
+    // public ReducedStateHeader for go binding
+    function _hashReducedStateHeader(ReducedStateHeader memory reducedStateHeader) public pure returns (bytes32) {
         return keccak256(abi.encode(reducedStateHeader));
     }
 

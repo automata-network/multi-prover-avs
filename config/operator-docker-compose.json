@@ -1,11 +1,11 @@
 {
     "BlsPrivateKey": "0x5650b11dcef2d36ff5d03cfee3827ad725f128e9f5a4fbad0dfa019838e6c1b0",
-    "ProverURL": "http://localhost:8545",
+    "ProverURL": "http://anvil:8545",
     "EcdsaPrivateKey": "295f2c6d10bcccb48c6c45ecae3db01043bb018bd1e5fc0af091b7a17adfddde",
-    "EthRpcUrl": "http://localhost:8545",
-    "EthWsUrl": "ws://localhost:8545",
+    "EthRpcUrl": "http://anvil:8545",
+    "EthWsUrl": "ws://anvil:8545",
     "EigenMetricsIpPortAddress": ":15682",
-    "AggregatorURL": "http://localhost:18545",
+    "AggregatorURL": "http://aggregator:18545",
     "simulation": true,
     "TaskFetcher": {
         "OffsetFile": "config/operator_task_fetcher.offset",

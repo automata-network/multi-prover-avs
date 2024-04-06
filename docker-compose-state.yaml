@@ -1,0 +1,22 @@
+version: '3'
+
+networks:
+  multi-prover-network:
+    name: multi-prover-network
+    driver: bridge
+
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry
+    container_name: multi-prover-anvil
+    ports:
+      - "8545:8545"
+    entrypoint: anvil
+    command: --host 0.0.0.0 --fork-url ${HOLESKY_RPC_ENDPOINT} --fork-block-number ${FORK_BLOCK_NUMBER}
+    healthcheck:
+      test: ["CMD-SHELL", "echo hello"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    networks:
+      - multi-prover-network

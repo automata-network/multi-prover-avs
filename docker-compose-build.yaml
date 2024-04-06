@@ -1,0 +1,12 @@
+# This file is used for building and pushing images
+services:
+  aggregator:
+    build:
+      context: .
+      dockerfile: cmd/aggregator/Dockerfile
+    image: ghcr.io/automata-network/multi-prover-avs/aggregator:${BUILD_TAG:-latest}
+  operator:
+    build:
+      context: .
+      dockerfile: cmd/operator/Dockerfile
+    image: ghcr.io/automata-network/multi-prover-avs/operator:${BUILD_TAG:-latest}
