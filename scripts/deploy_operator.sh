@@ -49,6 +49,31 @@ function update_config() {
 
 }
 
+function topup_operator() {
+	topup_eth
+	topup_steth
+}
+
+function topup_steth() {
+	TARGET=$OPERATOR_ECDSA_PRIVATE_KEY \
+	STRATEGY_ADDRESS=$STRATEGY_ADDRESS \
+	_script script/StakeTokenTopup.s.sol
+}
+
+function topup_eth() {
+	if [[ "$VALUE" == "" ]]; then
+		export VALUE=200000000000000000
+	fi
+
+	TARGET=$OPERATOR_ECDSA_PRIVATE_KEY VALUE=$VALUE _script script/EthTransfer.s.sol
+}
+
+function _script() {
+	cd contracts
+	forge script "$@" -v --broadcast --rpc-url $RPC_URL --private-key $TOPUP_PRIVATE_KEY
+	cd -
+}
+
 function run() {
 	docker-compose -f docker-compose-operator.yaml up
 }
