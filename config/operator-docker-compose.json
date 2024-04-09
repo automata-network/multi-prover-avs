@@ -1,7 +1,7 @@
 {
-    "BlsPrivateKey": "0x5650b11dcef2d36ff5d03cfee3827ad725f128e9f5a4fbad0dfa019838e6c1b0",
+    "BlsPrivateKey": "xxxxxxx",
     "ProverURL": "http://anvil:8545",
-    "EcdsaPrivateKey": "295f2c6d10bcccb48c6c45ecae3db01043bb018bd1e5fc0af091b7a17adfddde",
+    "EcdsaPrivateKey": "xxxxxxx",
     "EthRpcUrl": "http://anvil:8545",
     "EthWsUrl": "ws://anvil:8545",
     "EigenMetricsIpPortAddress": ":15682",

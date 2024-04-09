@@ -1,5 +1,5 @@
 {
-    "EcdsaPrivateKey": "f6dc500a34373d7e8af2a4b0b2635253ce1bd92077ed86c24393fb01298abc1d",
+    "EcdsaPrivateKey": "xxxxxxx",
     "EthHttpEndpoint": "http://anvil:8545",
     "EthWsEndpoint": "ws://anvil:8545",
     "ListenAddr": ":18545",
