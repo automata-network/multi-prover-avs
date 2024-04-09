@@ -19,7 +19,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     using EnumerableSet for EnumerableSet.AddressSet;
 
     modifier onlyStateConfirmer() {
-        require(msg.sender == stateConfirmer, "MultiProverServiceManager.onlyStateConfirmer: caller is not the state confirmer");
+        require(msg.sender == stateConfirmer, "caller is not the state confirmer");
         _;
     }
 
@@ -55,7 +55,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         onlyWhenNotPaused(PAUSED_OPERTOR_REGISTRATION)
         onlyRegistryCoordinator 
     {
-        require(!poaEnabled || operatorWhitelist.contains(operator), "MultiProverServiceManager.registerOperatorToAVS: operator not whitelisted");
+        require(!poaEnabled || operatorWhitelist.contains(operator), "operator not whitelisted");
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -73,22 +73,22 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) external override onlyWhenNotPaused(PAUSED_SUBMIT_STATE) onlyStateConfirmer {
         // make sure the information needed to derive the non-signers and state transition is in calldata to avoid emitting events
-        require(tx.origin == msg.sender, "MultiProverServiceManager.confirmState: state transition and nonsigner data must be in calldata");
+        require(tx.origin == msg.sender, "state transition and nonsigner data must be in calldata");
 
         //make sure that the quorumNumbers and signedStakeForQuorums are of the same length
         require(
             stateHeader.quorumNumbers.length == stateHeader.quorumThresholdPercentages.length,
-            "MultiProverServiceManager.confirmState: quorumNumbers and signedStakeForQuorums must be of the same length"
+            "quorumNumbers and signedStakeForQuorums must be of the same length"
         );
 
         // make sure the committee exists
-        require(committees[stateHeader.committeeId].id != 0, "MultiProverServiceManager.confirmState: committee does not exist");
+        require(committees[stateHeader.committeeId].id != 0, "committee does not exist");
 
         // make sure the quorums belong to the committee
         for (uint256 i = 0; i < stateHeader.quorumNumbers.length; i++) {
             require(
                 quorumIdToCommitteeId[uint8(stateHeader.quorumNumbers[i])] == stateHeader.committeeId,
-                "MultiProverServiceManager.confirmState: quorum does not belong to committee"
+                "quorum does not belong to committee"
             );
         }
 
@@ -113,7 +113,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
             require(
                 quorumStakeTotals.signedStakeForQuorum[i] * THRESHOLD_DENOMINATOR
                     >= quorumStakeTotals.totalStakeForQuorum[i] * uint8(stateHeader.quorumThresholdPercentages[i]),
-                "MultiProverServiceManager.confirmState: signatories do not own at least threshold percentage of a quorum"
+                "signatories do not own at least threshold percentage of a quorum"
             );
         }
 
@@ -128,12 +128,12 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     }
 
     function addCommittee(Committee memory committee) external onlyOwner {
-        require(committee.id != 0, "MultiProverServiceManager.addCommittee: committee id cannot be 0");
-        require(committees[committee.id].id == 0, "MultiProverServiceManager.addCommittee: committee already exists");
+        require(committee.id != 0, "committee id cannot be 0");
+        require(committees[committee.id].id == 0, "committee already exists");
         for (uint256 i = 0; i < committee.teeQuorumNumbers.length; i++) {
             uint8 teeQuorumNumber = uint8(committee.teeQuorumNumbers[i]);
-            require(teeQuorums[teeQuorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.addCommittee: tee quorum does not exist");
-            require(quorumIdToCommitteeId[teeQuorumNumber] == 0, "MultiProverServiceManager.addCommittee: tee quorum is used by another committee");
+            require(teeQuorums[teeQuorumNumber].teeType != TEE.NONE, "tee quorum does not exist");
+            require(quorumIdToCommitteeId[teeQuorumNumber] == 0, "tee quorum is used by another committee");
             quorumIdToCommitteeId[teeQuorumNumber] = committee.id;
         }
 
@@ -144,7 +144,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         require(committees[committee.id].id != 0, "MultiProverServiceManager.updateCommittee: committee does not exist");
         for (uint256 i = 0; i < committee.teeQuorumNumbers.length; i++) {
             uint8 teeQuorumNumber = uint8(committee.teeQuorumNumbers[i]);
-            require(teeQuorums[teeQuorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.addCommittee: tee quorum does not exist");
+            require(teeQuorums[teeQuorumNumber].teeType != TEE.NONE, "tee quorum does not exist");
             require(quorumIdToCommitteeId[teeQuorumNumber] == 0 || quorumIdToCommitteeId[teeQuorumNumber] == committee.id, "MultiProverServiceManager.updateCommittee: tee quorum is used by another committee");
             quorumIdToCommitteeId[teeQuorumNumber] = committee.id;
         }
@@ -153,7 +153,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     }
 
     function removeCommittee(uint256 committeeId) external onlyOwner {
-        require(committees[committeeId].id != 0, "MultiProverServiceManager.removeCommittee: committee does not exist");
+        require(committees[committeeId].id != 0, "committee does not exist");
         bytes memory teeQuorumNumbers = committees[committeeId].teeQuorumNumbers;
         for (uint256 i = 0; i < teeQuorumNumbers.length; i++) {
             quorumIdToCommitteeId[uint8(teeQuorumNumbers[i])] = 0;
@@ -163,15 +163,15 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     }
 
     function addTEEQuorum(TEEQuorum memory teeQuorum) external onlyOwner {
-        require(teeQuorums[teeQuorum.quorumNumber].teeType == TEE.NONE, "MultiProverServiceManager.addTEEQuorum: tee quorum already exists");
+        require(teeQuorums[teeQuorum.quorumNumber].teeType == TEE.NONE, "tee quorum already exists");
         require(_stakeRegistry.getTotalStakeHistoryLength(teeQuorum.quorumNumber) != 0, "MultiProverServiceManager.addTEEQuorum: quorum not initialized");
 
         teeQuorums[teeQuorum.quorumNumber] = teeQuorum;
     }
 
     function removeTEEQuorum(uint8 quorumNumber) external onlyOwner {
-        require(teeQuorums[quorumNumber].teeType != TEE.NONE, "MultiProverServiceManager.removeTEEQuorum: tee quorum does not exist");
-        require(quorumIdToCommitteeId[quorumNumber] == 0, "MultiProverServiceManager.removeTEEQuorum: tee quorum is in use");
+        require(teeQuorums[quorumNumber].teeType != TEE.NONE, "tee quorum does not exist");
+        require(quorumIdToCommitteeId[quorumNumber] == 0, "tee quorum is in use");
 
         delete teeQuorums[quorumNumber];
     }
@@ -181,12 +181,12 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     }
 
     function enablePoA() external onlyOwner {
-        require(!poaEnabled, "MultiProverServiceManager.enablePoA: PoA already enabled");
+        require(!poaEnabled, "PoA already enabled");
         poaEnabled = true;
     }
 
     function disablePoA() external onlyOwner {
-        require(poaEnabled, "MultiProverServiceManager.disablePoA: PoA already disabled");
+        require(poaEnabled, "PoA already disabled");
         poaEnabled = false;
     }
 
@@ -195,14 +195,14 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     }
 
     function whitelistOperator(address operator) external onlyOwner {
-        require(operator != address(0), "MultiProverServiceManager.whitelistOperator: operator cannot be the zero address");
-        require(!operatorWhitelist.contains(operator), "MultiProverServiceManager.whitelistOperator: operator already whitelisted");
+        require(operator != address(0), "zero address");
+        require(!operatorWhitelist.contains(operator), "operator already whitelisted");
         operatorWhitelist.add(operator);
     }
 
     function blacklistOperator(address operator) external onlyOwner {
-        require(operator != address(0), "MultiProverServiceManager.blacklistOperator: operator cannot be the zero address");
-        require(operatorWhitelist.contains(operator), "MultiProverServiceManager.blacklistOperator: operator not whitelisted");
+        require(operator != address(0), "zero address");
+        require(operatorWhitelist.contains(operator), "operator not whitelisted");
         operatorWhitelist.remove(operator);
     }
 
@@ -211,7 +211,7 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
     }
 
     function _setStateConfirmer(address _stateConfirmer) internal {
-        require(_stateConfirmer != address(0), "MultiProverServiceManager._setStateConfirmer: state confirmer cannot be the zero address");
+        require(_stateConfirmer != address(0), "zero address");
         address previousConfirmer = stateConfirmer;
         stateConfirmer = _stateConfirmer;
         emit StateConfirmerUpdated(previousConfirmer, _stateConfirmer);
