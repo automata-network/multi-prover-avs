@@ -42,6 +42,8 @@ function update_config() {
 	_set_key config/operator.json AggregatorURL $AGGREGATOR_URL
 	_set_key config/operator.json RegistryCoordinatorAddress $REGISTRY_COORDINATOR_ADDRESS
 	_set_key config/operator.json TEELivenessVerifierAddr $TEE_LIVENESS_VERIFIER_ADDRESS
+	
+	_set_bool_key config/operator.json simulation $SIMULATION
 }
 
 function run() {
