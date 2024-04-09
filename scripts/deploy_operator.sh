@@ -40,16 +40,17 @@ function update_config() {
 	_set_key config/operator.json EthWsUrl $RPC_WS
 	
 	_set_key config/operator.json AggregatorURL $AGGREGATOR_URL
+	_set_key config/operator.json ProverURL $PROVER_URL
+	
 	_set_key config/operator.json RegistryCoordinatorAddress $REGISTRY_COORDINATOR_ADDRESS
 	_set_key config/operator.json TEELivenessVerifierAddr $TEE_LIVENESS_VERIFIER_ADDRESS
 	
 	_set_bool_key config/operator.json simulation $SIMULATION
-	_set_bool_key config/operator.json ProverURL $PROVER_URL
 
 }
 
 function run() {
-	docker-compose -f docker-compose-holesky.yaml up
+	docker-compose -f docker-compose-operator.yaml up
 }
 
 function stop() {

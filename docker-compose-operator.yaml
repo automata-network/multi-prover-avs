@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  operator:
+    image: ghcr.io/automata-network/multi-prover-avs/operator:latest
+    container_name: multi-prover-operator
+    command: -c config/operator.json
+    volumes:
+      - ./config:/config
+    working_dir: /
