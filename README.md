@@ -168,36 +168,3 @@ go run ./cmd/operator
 > ./scripts/docker.sh stop
 ```
 
-## Operator Guide
-
-### Running on Holesky Testnest
-1. Register as an operator with [Eigenlayer](https://docs.eigenlayer.xyz/eigenlayer/overview)
-
-2. Install [Docker](https://docs.docker.com/engine/install/)
-
-3. Prepare the repo
-```
-git clone https://github.com/automata-network/multi-prover-avs
-cd multi-prover-avs
-```
-
-4. Update the `.env` file. Operators need to fill up variables marked as TODO.
-```
-cp .env.example .env
-vim .env
-```
-
-5. Update config files for aggregator and operator by running this script:
-```
-./scripts/deploy_holesky.sh update_config
-```
-
-6. Start the aggregator and operator:
-```
-./scripts/deploy_holesky.sh run
-```
-
-7. To stop everything:
-```
-./scripts/deploy_holesky.sh stop
-```
