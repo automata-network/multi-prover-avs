@@ -44,6 +44,8 @@ function update_config() {
 	_set_key config/operator.json TEELivenessVerifierAddr $TEE_LIVENESS_VERIFIER_ADDRESS
 	
 	_set_bool_key config/operator.json simulation $SIMULATION
+	_set_bool_key config/operator.json ProverURL $PROVER_URL
+
 }
 
 function run() {
