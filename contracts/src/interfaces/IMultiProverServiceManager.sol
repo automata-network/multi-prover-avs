@@ -21,6 +21,10 @@ interface IMultiProverServiceManager is IServiceManager {
      */
     event StateConfirmerUpdated(address previousConfirmer, address currentConfirmer);
 
+    event PoAManagerUpdated(address previousPoaManager, address currentPoaManager);
+
+    event CommitteeManagerUpdated(address previousCommitteeManager, address currentCommitteeManager);
+
     /**
      * @notice The state proved by the prover
      * @param committeeId the identifier of the committee

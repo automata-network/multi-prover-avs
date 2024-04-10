@@ -28,6 +28,10 @@ abstract contract MultiProverServiceManagerStorage is IMultiProverServiceManager
     /// @notice the address that is permissioned to submit state transitions
     address public stateConfirmer;
 
+    address public poaManager;
+
+    address public committeeManager;
+
     EnumerableSet.AddressSet internal operatorWhitelist;
 
     bool public poaEnabled;

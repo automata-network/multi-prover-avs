@@ -151,6 +151,8 @@ contract DeployMultiProverServiceManager is Script {
                     0,
                     msg.sender,
                     msg.sender,
+                    msg.sender,
+                    msg.sender,
                     true    // Enable PoA
                 )
             );
