@@ -6,11 +6,13 @@ import "forge-std/Script.sol";
 
 contract TEEQuorumManagement is Script {
     IMultiProverServiceManager serviceManager = IMultiProverServiceManager(vm.envAddress("MULTI_PROVER_SERVICE_MANAGER"));
-    uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
+    function run() public {
+        addQuorum(IMultiProverServiceManager.TEE.INTEL_SGX, 0);
+    }
 
     function addQuorum(IMultiProverServiceManager.TEE teeType, uint8 quorumNumber) public {
-        vm.startBroadcast(privateKey);
+        vm.startBroadcast();
         IMultiProverServiceManager.TEEQuorum memory quorum = IMultiProverServiceManager.TEEQuorum({
             teeType: teeType,
             quorumNumber: quorumNumber
@@ -20,7 +22,7 @@ contract TEEQuorumManagement is Script {
     }
 
     function removeQuorum(uint8 quorumNumber) public {
-        vm.startBroadcast(privateKey);
+        vm.startBroadcast();
         serviceManager.removeTEEQuorum(quorumNumber);
         vm.stopBroadcast();
     }
