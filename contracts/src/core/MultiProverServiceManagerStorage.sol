@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
 import {IMultiProverServiceManager} from "../interfaces/IMultiProverServiceManager.sol";
 
 abstract contract MultiProverServiceManagerStorage is IMultiProverServiceManager {
@@ -28,7 +26,11 @@ abstract contract MultiProverServiceManagerStorage is IMultiProverServiceManager
     /// @notice the address that is permissioned to submit state transitions
     address public stateConfirmer;
 
-    EnumerableSet.AddressSet internal operatorWhitelist;
+    address public poaManager;
+
+    address public committeeManager;
+
+    mapping(address => bool) internal operatorWhitelist;
 
     bool public poaEnabled;
 }

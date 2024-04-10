@@ -21,6 +21,38 @@ interface IMultiProverServiceManager is IServiceManager {
      */
     event StateConfirmerUpdated(address previousConfirmer, address currentConfirmer);
 
+    event PoAManagerUpdated(address previousPoaManager, address currentPoaManager);
+
+    event CommitteeManagerUpdated(address previousCommitteeManager, address currentCommitteeManager);
+
+    error NoPermission();
+
+    error NotWhitelisted();
+
+    error InvalidSender();
+
+    error InvalidQuorumParam();
+
+    error InvalidQuorum();
+
+    error InsufficientThreshold();
+
+    error ZeroAddr();
+
+    error ZeroId();
+
+    error CommitteeNotExist();
+
+    error CommitteeExist();
+
+    error TEEQuorumNotExist();
+
+    error TEEQuorumExist();
+
+    error TEEQuorumUsed();
+
+    error QuorumNotInitialized();
+
     /**
      * @notice The state proved by the prover
      * @param committeeId the identifier of the committee
