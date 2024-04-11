@@ -31,7 +31,7 @@ contract DeployMultiProverServiceManager is Script {
     function run() public {
         vm.startBroadcast();
 
-        // These are deployed strategies used by EigenDA, we will also use them for multi-prover AVS
+        // These are deployed strategies used by EigenDA on Holesky testnet, we will also use them for multi-prover AVS
         address[] memory quorum0Strategies = new address[](11);
         {
             quorum0Strategies[0] = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0; // Virtual strategy for beacon chain ETH

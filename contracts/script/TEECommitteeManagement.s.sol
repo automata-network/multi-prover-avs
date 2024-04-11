@@ -6,10 +6,18 @@ import "forge-std/Script.sol";
 
 contract TEECommitteeManagement is Script {
     IMultiProverServiceManager serviceManager = IMultiProverServiceManager(vm.envAddress("MULTI_PROVER_SERVICE_MANAGER"));
-    uint256 privateKey = vm.envUint("PRIVATE_KEY");
+    
+    function run() public {
+        uint256 id = 1;
+        string memory description = "Scroll Prover Committee";
+        bytes memory metadata = abi.encodePacked('{"chainId":534352}');
+        bytes memory teeQuorumNumbers = new bytes(1);
+        teeQuorumNumbers[0] = bytes1(uint8(0));
+        addCommittee(id, description, metadata, teeQuorumNumbers);
+    }
 
     function addCommittee(uint256 id, string memory description, bytes memory metadata, bytes memory teeQuorumNumbers) public {
-        vm.startBroadcast(privateKey);
+        vm.startBroadcast();
         IMultiProverServiceManager.Committee memory committee = IMultiProverServiceManager.Committee({
             id: id,
             description: description,
@@ -21,7 +29,7 @@ contract TEECommitteeManagement is Script {
     }
 
     function updateCommittee(uint256 id, string memory description, bytes memory metadata, bytes memory teeQuorumNumbers) public {
-        vm.startBroadcast(privateKey);
+        vm.startBroadcast();
         IMultiProverServiceManager.Committee memory committee = IMultiProverServiceManager.Committee({
             id: id,
             description: description,
@@ -33,7 +41,7 @@ contract TEECommitteeManagement is Script {
     }
 
     function removeCommittee(uint256 committeeId) public {
-        vm.startBroadcast(privateKey);
+        vm.startBroadcast();
         serviceManager.removeCommittee(committeeId);
         vm.stopBroadcast();
     }
