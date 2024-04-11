@@ -123,6 +123,16 @@ The workflow is divided into two parts:
 
 The concept of a **TEE Quorum** aligns with the quorum definition utilized by Eigenlayer, but each quorum is associated with a TEE platform, such as Intel SGX. Each quorum belongs to a committee, operators can choose to join any quorum, But only the votes from operators possessing the requisite attestation will be accepted by the aggregator.
 
+## Deployments
+### Holesky Testnet Deployments
+| Name | Proxy |
+| ---- | ---- |
+| MultiProverServiceManager |[`0x4665Af665df5703445645D243f0FD63eD3b9D132`](https://holesky.etherscan.io/address/0x4665Af665df5703445645D243f0FD63eD3b9D132)|
+| RegistryCoordinator |[`0x62c715575cE3Ad7C5a43aA325b881c70564f2215`](https://holesky.etherscan.io/address/0x62c715575cE3Ad7C5a43aA325b881c70564f2215)|
+| StakeRegistry |[`0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8`](https://holesky.etherscan.io/address/0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8)|
+| BlsApkRegistry |[`0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb`](https://holesky.etherscan.io/address/0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb)|
+| IndexRegistry |[`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500)|
+
 ## Quick Start
 
 Steps for running the multi-prover-avs in simulation node(without the SGX prover):
