@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
-	"os"
 
 	"github.com/automata-network/multi-prover-avs/operator"
 	"github.com/chzyer/logex"
@@ -23,15 +21,7 @@ func NewFlag() *Flag {
 
 func main() {
 	flag := NewFlag()
-	cfgBytes, err := os.ReadFile(flag.Config)
-	if err != nil {
-		logex.Fatal(err)
-	}
-	cfg := &operator.Config{}
-	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
-		logex.Fatal(err)
-	}
-	o, err := operator.NewOperator(cfg)
+	o, err := operator.NewOperator(flag.Config)
 	if err != nil {
 		logex.Fatal(err)
 	}

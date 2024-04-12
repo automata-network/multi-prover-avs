@@ -43,7 +43,7 @@ type StateHeader struct {
 
 func (s *StateHeader) ToAbi() *bindings.StateHeader {
 	return &bindings.StateHeader{
-		Identifier:                 new(big.Int).Set((*big.Int)(s.Identifier)),
+		CommitteeId:                new(big.Int).Set((*big.Int)(s.Identifier)),
 		Metadata:                   []byte(s.Metadata),
 		State:                      []byte(s.State),
 		QuorumNumbers:              []byte(s.QuorumNumbers),

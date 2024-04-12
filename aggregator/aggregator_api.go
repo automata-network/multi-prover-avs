@@ -65,7 +65,7 @@ func (a *AggregatorApi) submitTask(ctx context.Context, req *TaskRequest) error 
 		return logex.Trace(err)
 	}
 	if !pass {
-		return logex.NewErrorf("prover not registered")
+		return logex.NewErrorf("prover[%v] not registered", req.OperatorId)
 	}
 
 	if err := a.agg.submitStateHeader(ctx, req); err != nil {

@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,6 +51,13 @@ func NewProverClient(url string) (*ProverClient, error) {
 	}, nil
 }
 
+type PoeResponse struct {
+	NotReady   bool   `json:"not_ready"`
+	StartBlock uint64 `json:"start_block"`
+	EndBlock   uint64 `json:"end_block"`
+	Poe        *Poe   `json:"poe"`
+}
+
 type Poe struct {
 	BatchHash      common.Hash   `json:"batch_hash"`
 	StateHash      common.Hash   `json:"state_hash"`
@@ -77,10 +86,20 @@ func (p *ProverClient) GenerateAttestaionReport(ctx context.Context, pubkey hexu
 	return attestationReport, nil
 }
 
-func (p *ProverClient) GetPoe(ctx context.Context, txHash common.Hash) (*Poe, error) {
-	var result *Poe
-	if err := p.client.CallContext(ctx, &result, "getPoe", txHash); err != nil {
-		return nil, logex.Trace(err, "getPoe")
+func (p *ProverClient) GetPoe(ctx context.Context, txHash common.Hash) (*PoeResponse, bool, error) {
+	for {
+		var result *PoeResponse
+		if err := p.client.CallContext(ctx, &result, "getPoe", txHash); err != nil {
+			if strings.Contains(err.Error(), "skip") {
+				return nil, true, nil
+			}
+			return nil, false, logex.Trace(err, "getPoe")
+		}
+		logex.Pretty(result)
+		if result.NotReady {
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		return result, false, nil
 	}
-	return result, nil
 }

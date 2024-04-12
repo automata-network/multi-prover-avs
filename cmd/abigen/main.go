@@ -19,6 +19,9 @@ func main() {
 	if err := gen("contracts/bindings", "contracts/out/", "TEELivenessVerifier"); err != nil {
 		logex.Fatal(err)
 	}
+	if err := gen("contracts/bindings", "contracts/out/", "ERC20"); err != nil {
+		logex.Fatal(err)
+	}
 }
 
 type Abi struct {

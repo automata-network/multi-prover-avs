@@ -19,29 +19,32 @@ type LogHandler interface {
 }
 
 type LogTracer struct {
-	id      string
-	wait    uint64
-	max     uint64
-	source  *ethclient.Client
-	filter  ethereum.FilterQuery
-	handler LogHandler
+	id          string
+	wait        uint64
+	max         uint64
+	source      *ethclient.Client
+	filter      ethereum.FilterQuery
+	handler     LogHandler
+	skipOnError bool
 }
 
 type LogTracerConfig struct {
-	Id        string
-	Wait      uint64
-	Max       uint64
-	Topics    [][]common.Hash
-	Addresses []common.Address
-	Handler   LogHandler
+	Id          string
+	Wait        uint64
+	Max         uint64
+	Topics      [][]common.Hash
+	Addresses   []common.Address
+	Handler     LogHandler
+	SkipOnError bool
 }
 
 func NewLogTracer(source *ethclient.Client, cfg *LogTracerConfig) *LogTracer {
 	return &LogTracer{
-		id:     cfg.Id,
-		source: source,
-		wait:   cfg.Wait,
-		max:    cfg.Max,
+		id:          cfg.Id,
+		skipOnError: cfg.SkipOnError,
+		source:      source,
+		wait:        cfg.Wait,
+		max:         cfg.Max,
 		filter: ethereum.FilterQuery{
 			Addresses: cfg.Addresses,
 			Topics:    cfg.Topics,
@@ -118,12 +121,14 @@ scan:
 			for _, log := range logs {
 				if err := l.handler.OnNewLog(ctx, &log); err != nil {
 					logex.Errorf("[%v] process logs fail => %v", log.BlockNumber, err)
-					l.sleepSecs(ctx, 4)
 					if log.BlockNumber-1 > start {
 						start = log.BlockNumber
 						l.saveOffset(start)
 					}
-					continue scan
+					l.sleepSecs(ctx, 4)
+					if !l.skipOnError {
+						continue scan
+					}
 				}
 			}
 			logex.Infof("[%v] scan %v -> %v, logs: %v", l.id, start, end, len(logs))

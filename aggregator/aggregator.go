@@ -2,7 +2,6 @@ package aggregator
 
 import (
 	"context"
-	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -10,10 +9,10 @@ import (
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
-	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
 	blsagg "github.com/Layr-Labs/eigensdk-go/services/bls_aggregation"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
@@ -39,6 +38,7 @@ type Config struct {
 	OperatorStateRetrieverAddress common.Address
 	EigenMetricsIpPortAddress     string
 	ScanStartBlock                uint64
+	Threshold                     uint64
 
 	Simulation bool
 }
@@ -54,6 +54,8 @@ type Aggregator struct {
 	multiProverContract *MultiProverServiceManager.MultiProverServiceManager
 	TEELivenessVerifier *TEELivenessVerifier.TEELivenessVerifierCaller
 	registry            *avsregistry.AvsRegistryServiceChainCaller
+
+	eigenClients *clients.Clients
 
 	taskMutex    sync.Mutex
 	taskIndexSeq uint32
@@ -181,7 +183,7 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 			delete(agg.taskIndexMap, response.TaskResponseDigest)
 			agg.taskMutex.Unlock()
 
-			if err := agg.sendAggregatedResponseToContract(task, response); err != nil {
+			if err := agg.sendAggregatedResponseToContract(ctx, task, response); err != nil {
 				logex.Error(err)
 			}
 		case err := <-errChan:
@@ -195,6 +197,15 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 	if err != nil {
 		return logex.Trace(err)
 	}
+
+	quorumNumbers := make([]types.QuorumNum, len(req.Task.QuorumNumbers))
+	quorumThresholdPercentages := make([]types.QuorumThresholdPercentage, len(req.Task.QuorumThresholdPercentages))
+	for i, qn := range req.Task.QuorumNumbers {
+		quorumNumbers[i] = types.QuorumNum(qn)
+		quorumThresholdPercentages[i] = types.QuorumThresholdPercentage(agg.cfg.Threshold)
+	}
+	req.Task.QuorumThresholdPercentages = types.QuorumThresholdPercentages(quorumThresholdPercentages).UnderlyingType()
+
 	agg.taskMutex.Lock()
 	task, ok := agg.taskIndexMap[digest]
 	if !ok {
@@ -209,16 +220,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 
 	if !ok {
 		timeToExpiry := time.Duration(agg.cfg.TimeToExpirySecs) * time.Second
-		sh := req.Task
-		quorumNumbers := make([]types.QuorumNum, len(sh.QuorumNumbers))
-		quorumThresholdPercentages := make([]types.QuorumThresholdPercentage, len(sh.QuorumThresholdPercentages))
-		for i, qn := range sh.QuorumNumbers {
-			quorumNumbers[i] = types.QuorumNum(qn)
-		}
-		for i, qn := range sh.QuorumThresholdPercentages {
-			quorumThresholdPercentages[i] = types.QuorumThresholdPercentage(qn)
-		}
-		err = agg.blsAggregationService.InitializeNewTask(task.index, sh.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
+		err = agg.blsAggregationService.InitializeNewTask(task.index, req.Task.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
 		if err != nil {
 			return logex.Trace(err)
 		}
@@ -230,24 +232,24 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 	return nil
 }
 
-func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServiceResp blsagg.BlsAggregationServiceResponse) error {
+func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, task *Task, blsAggServiceResp blsagg.BlsAggregationServiceResponse) error {
 	if blsAggServiceResp.Err != nil {
 		return logex.Trace(blsAggServiceResp.Err)
 	}
 
 	nonSignerPubkeys := []MultiProverServiceManager.BN254G1Point{}
 	for _, nonSignerPubkey := range blsAggServiceResp.NonSignersPubkeysG1 {
-		nonSignerPubkeys = append(nonSignerPubkeys, ConvertToBN254G1Point(nonSignerPubkey))
+		nonSignerPubkeys = append(nonSignerPubkeys, bindings.ConvertToBN254G1Point(nonSignerPubkey))
 	}
 	quorumApks := []MultiProverServiceManager.BN254G1Point{}
 	for _, quorumApk := range blsAggServiceResp.QuorumApksG1 {
-		quorumApks = append(quorumApks, ConvertToBN254G1Point(quorumApk))
+		quorumApks = append(quorumApks, bindings.ConvertToBN254G1Point(quorumApk))
 	}
 	nonSignerStakesAndSignature := MultiProverServiceManager.IBLSSignatureCheckerNonSignerStakesAndSignature{
 		NonSignerPubkeys:             nonSignerPubkeys,
 		QuorumApks:                   quorumApks,
-		ApkG2:                        ConvertToBN254G2Point(blsAggServiceResp.SignersApkG2),
-		Sigma:                        ConvertToBN254G1Point(blsAggServiceResp.SignersAggSigG1.G1Point),
+		ApkG2:                        bindings.ConvertToBN254G2Point(blsAggServiceResp.SignersApkG2),
+		Sigma:                        bindings.ConvertToBN254G1Point(blsAggServiceResp.SignersAggSigG1.G1Point),
 		NonSignerQuorumBitmapIndices: blsAggServiceResp.NonSignerQuorumBitmapIndices,
 		QuorumApkIndices:             blsAggServiceResp.QuorumApkIndices,
 		TotalStakeIndices:            blsAggServiceResp.TotalStakeIndices,
@@ -260,21 +262,23 @@ func (agg *Aggregator) sendAggregatedResponseToContract(task *Task, blsAggServic
 	}
 	logex.Pretty(task.state.Task)
 	logex.Infof("confirm state: %v", tx.Hash())
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, 300*time.Second)
+		defer cancel()
+		for {
+			select {
+			case <-ctx.Done():
+				logex.Error(ctx.Err())
+			default:
+				receipt, _ := agg.client.TransactionReceipt(ctx, tx.Hash())
+				if receipt != nil {
+					logex.Infof("tx commited: %v, gas used: %v, success: %v", tx.Hash(), receipt.GasUsed, receipt.Status == 1)
+					return
+				}
+				time.Sleep(3 * time.Second)
+				continue
+			}
+		}
+	}()
 	return nil
-}
-
-func ConvertToBN254G1Point(input *bls.G1Point) MultiProverServiceManager.BN254G1Point {
-	output := MultiProverServiceManager.BN254G1Point{
-		X: input.X.BigInt(big.NewInt(0)),
-		Y: input.Y.BigInt(big.NewInt(0)),
-	}
-	return output
-}
-
-func ConvertToBN254G2Point(input *bls.G2Point) MultiProverServiceManager.BN254G2Point {
-	output := MultiProverServiceManager.BN254G2Point{
-		X: [2]*big.Int{input.X.A1.BigInt(big.NewInt(0)), input.X.A0.BigInt(big.NewInt(0))},
-		Y: [2]*big.Int{input.Y.A1.BigInt(big.NewInt(0)), input.Y.A0.BigInt(big.NewInt(0))},
-	}
-	return output
 }
