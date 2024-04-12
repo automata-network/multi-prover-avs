@@ -117,9 +117,9 @@ The workflow is divided into two parts:
     - Aggregator aggregate all the BLS signature and submit to the AVS service manager
 
 ## TEE Committee and Quorum
-![Committee and Quorum](./assets/committee-and-quorum.jpg)
+![Committee and Quorum](./assets/committee-and-quorum.png)
 
-**TEE Committee** is a set of quorum that is responsible to handle a specific type of task. For example, proving the root state of scroll at a particular block height. Operators do not need to actively choose a committee, but automatically belong to a committee by joining quorums. The introduction of `TEE Committee` facilitates a more organized structuring of operators and tasks. And lays the groundwork for future enhancements, including the rewarding mechanism and constraints of stake distribution across quorums.
+**TEE Committee** is a set of quorum that is responsible to handle a specific type of task. For example, proving the root state of Zk-Rollup at a particular block height. Operators do not need to actively choose a committee, but automatically belong to a committee by joining quorums. The introduction of `TEE Committee` facilitates a more organized structuring of operators and tasks. And lays the groundwork for future enhancements, including the rewarding mechanism and constraints of stake distribution across quorums.
 
 The concept of a **TEE Quorum** aligns with the quorum definition utilized by Eigenlayer, but each quorum is associated with a TEE platform, such as Intel SGX. Each quorum belongs to a committee, operators can choose to join any quorum, But only the votes from operators possessing the requisite attestation will be accepted by the aggregator.
 
@@ -132,6 +132,8 @@ The concept of a **TEE Quorum** aligns with the quorum definition utilized by Ei
 | StakeRegistry |[`0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8`](https://holesky.etherscan.io/address/0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8)|
 | BlsApkRegistry |[`0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb`](https://holesky.etherscan.io/address/0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb)|
 | IndexRegistry |[`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500)|
+
+Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS. The onboarding guide is available [here](https://atanetwork.notion.site/Automata-Multi-Prover-AVS-Testnet-Operator-Guide-48ad947de8404716b9e4e1e946618f08).
 
 ## Quick Start
 
