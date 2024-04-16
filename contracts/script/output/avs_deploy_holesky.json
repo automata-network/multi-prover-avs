@@ -5,5 +5,6 @@
   "object": "multi-prover avs contracts deployment output",
   "operatorStateRetriever": "0xbfd43ac0a19c843e44491c3207ea13914818E214",
   "registryCoordinator": "0x62c715575cE3Ad7C5a43aA325b881c70564f2215",
-  "stakeRegistry": "0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8"
+  "stakeRegistry": "0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8",
+  "proxyAdmin":"0x5edB2F2A32666717d505A3FC114d965E730aC0bc"
 }
