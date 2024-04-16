@@ -1,0 +1,9 @@
+{
+  "blsApkRegistry": "0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb",
+  "indexRegistry": "0x158583f023ca440e79F199f037aa8b53b198F500",
+  "multiProverServiceManager": "0x4665Af665df5703445645D243f0FD63eD3b9D132",
+  "object": "multi-prover avs contracts deployment output",
+  "operatorStateRetriever": "0xbfd43ac0a19c843e44491c3207ea13914818E214",
+  "registryCoordinator": "0x62c715575cE3Ad7C5a43aA325b881c70564f2215",
+  "stakeRegistry": "0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8"
+}
