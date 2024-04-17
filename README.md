@@ -132,8 +132,25 @@ The concept of a **TEE Quorum** aligns with the quorum definition utilized by Ei
 | StakeRegistry |[`0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8`](https://holesky.etherscan.io/address/0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8)|
 | BlsApkRegistry |[`0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb`](https://holesky.etherscan.io/address/0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb)|
 | IndexRegistry |[`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500)|
+| OperatorStateRetriever | [`0xbfd43ac0a19c843e44491c3207ea13914818E214`](https://holesky.etherscan.io/address/0xbfd43ac0a19c843e44491c3207ea13914818E214) |
+| TEELivenessVerifier | [`0x63AED86c0c6Df1e60E01AAF9bcD39ad5cD2e3344`](https://holesky.etherscan.io/address/0x63AED86c0c6Df1e60E01AAF9bcD39ad5cD2e3344) |
+| AutomataDcapV3Attestation | [`0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14`](https://holesky.etherscan.io/address/0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14) |
 
-Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS. The onboarding guide is available [here](https://atanetwork.notion.site/Automata-Multi-Prover-AVS-Testnet-Operator-Guide-48ad947de8404716b9e4e1e946618f08).
+Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://atanetwork.notion.site/Automata-Multi-Prover-AVS-Testnet-Operator-Guide-48ad947de8404716b9e4e1e946618f08).
+
+### Mainnet Deployment
+| Name | Proxy |
+| ---- | ---- |
+| MultiProverServiceManager |[`0xE5445838C475A2980e6a88054ff1514230b83aEb`](https://etherscan.io/address/0xE5445838C475A2980e6a88054ff1514230b83aEb)|
+| RegistryCoordinator |[`0x414696E4F7f06273973E89bfD3499e8666D63Bd4`](https://etherscan.io/address/0x414696E4F7f06273973E89bfD3499e8666D63Bd4)|
+| StakeRegistry |[`0x4A4EC1631aE79699be7dCFD3fCA395Ab89c5eFe9`](https://etherscan.io/address/0x4A4EC1631aE79699be7dCFD3fCA395Ab89c5eFe9)|
+| BlsApkRegistry |[`0x61D25c9b943b893747Bd33F92B62Ec8270222e6F`](https://etherscan.io/address/0x61D25c9b943b893747Bd33F92B62Ec8270222e6F)|
+| IndexRegistry |[`0x16552d7863560Ee6903F092A901A9124a5013085`](https://etherscan.io/address/0x16552d7863560Ee6903F092A901A9124a5013085)|
+| OperatorStateRetriever | [`0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6`](https://etherscan.io/address/0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6) |
+| TEELivenessVerifier | [`0x8E26055388347A2f4A7a112A7210CcC88A1c2F30`](https://optimism.etherscan.io/address/0x8E26055388347A2f4A7a112A7210CcC88A1c2F30) |
+| AutomataDcapV3Attestation | [`0xA65a18a7f8Bb621017Ec0481B7eFe37a006EbD93`](https://holesky.etherscan.io/address/0xA65a18a7f8Bb621017Ec0481B7eFe37a006EbD93) |
+
+The Multi-Prover AVS will launch on mainnet soon, please be patient!
 
 ## Quick Start
 
