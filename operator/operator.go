@@ -34,12 +34,13 @@ import (
 )
 
 type ConfigContext struct {
-	Config          *Config
-	BlsKey          *bls.KeyPair
-	EcdsaKey        *ecdsa.PrivateKey
-	OperatorAddress common.Address
-	Client          *ethclient.Client
-	EigenClients    *clients.Clients
+	Config            *Config
+	BlsKey            *bls.KeyPair
+	EcdsaKey          *ecdsa.PrivateKey
+	OperatorAddress   common.Address
+	Client            *ethclient.Client
+	AttestationClient *ethclient.Client
+	EigenClients      *clients.Clients
 }
 
 func fixFilepath(path string) string {
@@ -76,6 +77,17 @@ func ParseConfigContext(cfgPath string) (*ConfigContext, error) {
 	}
 	operatorAddress := crypto.PubkeyToAddress(*ecdsaPrivateKey.Public().(*ecdsa.PublicKey))
 
+	logex.Infof("connecting to %v...", cfg.EthRpcUrl)
+	client, err := ethclient.Dial(cfg.EthRpcUrl)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	logex.Infof("connecting to %v...", cfg.AttestationLayerRpcURL)
+	attestationClient, err := ethclient.Dial(cfg.AttestationLayerRpcURL)
+	if err != nil {
+		return nil, logex.Trace(err, "AttestationLayerRpcURL", cfg.AttestationLayerRpcURL)
+	}
+
 	chainioConfig := clients.BuildAllConfig{
 		EthHttpUrl:                 cfg.EthRpcUrl,
 		EthWsUrl:                   cfg.EthWsUrl,
@@ -85,11 +97,7 @@ func ParseConfigContext(cfgPath string) (*ConfigContext, error) {
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
 
-	client, err := ethclient.Dial(cfg.EthRpcUrl)
-	if err != nil {
-		return nil, logex.Trace(err)
-	}
-
+	logex.Infof("build clients %#v", chainioConfig)
 	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, elog)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -100,12 +108,13 @@ func ParseConfigContext(cfgPath string) (*ConfigContext, error) {
 	}
 
 	return &ConfigContext{
-		Config:          &cfg,
-		BlsKey:          kp,
-		Client:          client,
-		EcdsaKey:        ecdsaPrivateKey,
-		EigenClients:    eigenClients,
-		OperatorAddress: operatorAddress,
+		Config:            &cfg,
+		BlsKey:            kp,
+		Client:            client,
+		EcdsaKey:          ecdsaPrivateKey,
+		EigenClients:      eigenClients,
+		OperatorAddress:   operatorAddress,
+		AttestationClient: attestationClient,
 	}, nil
 }
 
@@ -125,6 +134,8 @@ type Config struct {
 	EthRpcUrl string
 	EthWsUrl  string
 
+	AttestationLayerRpcURL string
+
 	StrategyAddress            common.Address
 	RegistryCoordinatorAddress common.Address
 	TEELivenessVerifierAddress common.Address
@@ -132,10 +143,11 @@ type Config struct {
 }
 
 type TaskFetcher struct {
-	Endpoint   string
-	Topics     [][]common.Hash
-	Addresses  []common.Address
-	OffsetFile string
+	Endpoint         string
+	Topics           [][]common.Hash
+	Addresses        []common.Address
+	OffsetFile       string
+	ScanIntervalSecs int64
 }
 
 type Operator struct {
@@ -166,7 +178,7 @@ func NewOperator(path string) (*Operator, error) {
 
 	logger := logex.NewLoggerEx(os.Stderr)
 
-	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifier(cfg.Config.TEELivenessVerifierAddress, cfg.Client)
+	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifier(cfg.Config.TEELivenessVerifierAddress, cfg.AttestationClient)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -197,13 +209,14 @@ func NewOperator(path string) (*Operator, error) {
 
 		operator.offset = offsetFile
 		operator.taskFetcher = NewLogTracer(taskFetcherClient, &LogTracerConfig{
-			Id:          "operator-log-tracer",
-			Wait:        5,
-			Max:         100,
-			Topics:      cfg.Config.TaskFetcher.Topics,
-			Addresses:   cfg.Config.TaskFetcher.Addresses,
-			Handler:     operator,
-			SkipOnError: true,
+			Id:               "operator-log-tracer",
+			Wait:             5,
+			Max:              100,
+			ScanIntervalSecs: cfg.Config.TaskFetcher.ScanIntervalSecs,
+			Topics:           cfg.Config.TaskFetcher.Topics,
+			Addresses:        cfg.Config.TaskFetcher.Addresses,
+			Handler:          operator,
+			SkipOnError:      true,
 		})
 	}
 
@@ -236,11 +249,6 @@ func (h *Operator) SaveBlock(offset uint64) error {
 	return err
 }
 
-type Metadata struct {
-	StartBlock uint64 `json:"start_block"`
-	EndBlock   uint64 `json:"end_block"`
-}
-
 // callback func for task fetcher
 func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	blockHeader, err := o.cfg.Client.HeaderByNumber(ctx, nil)
@@ -257,7 +265,11 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 		return nil
 	}
 
-	md := &Metadata{poe.StartBlock, poe.EndBlock}
+	md := &aggregator.Metadata{
+		BatchId:    poe.BatchId,
+		StartBlock: poe.StartBlock,
+		EndBlock:   poe.EndBlock,
+	}
 	mdBytes, err := json.Marshal(md)
 	if err != nil {
 		return logex.Trace(err)
@@ -268,7 +280,7 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 		Metadata:                   mdBytes,
 		State:                      poe.Poe.Pack(),
 		QuorumNumbers:              []byte{0},
-		QuorumThresholdPercentages: []byte{0},
+		QuorumThresholdPercentages: []byte{3},
 		ReferenceBlockNumber:       uint32(blockHeader.Number.Int64() - 1),
 	}
 
@@ -293,9 +305,10 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 }
 
 func (o *Operator) Start(ctx context.Context) error {
+	logex.Info("starting operator...")
 	isSimulation, err := o.TEELivenessVerifier.Simulation(nil)
 	if err != nil {
-		return logex.Trace(err)
+		return logex.Trace(err, "TEE")
 	}
 	if isSimulation != o.cfg.Config.Simulation {
 		return logex.NewErrorf("simulation mode not match with the contract: local:%v, remote:%v", o.cfg.Config.Simulation, isSimulation)
@@ -307,7 +320,7 @@ func (o *Operator) Start(ctx context.Context) error {
 		return logex.Trace(err)
 	}
 
-	o.logger.Infof("Start Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v",
+	o.logger.Infof("Started Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v",
 		hex.EncodeToString(o.operatorId[:]),
 		o.cfg.OperatorAddress,
 		o.cfg.BlsKey.GetPubKeyG1(),
@@ -418,7 +431,7 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 	if err != nil {
 		return logex.Trace(err)
 	}
-	chainId, err := o.cfg.Client.ChainID(ctx)
+	chainId, err := o.cfg.AttestationClient.ChainID(ctx)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -431,8 +444,8 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 	if err != nil {
 		return logex.Trace(err)
 	}
-	logex.Infof("submitting liveness proof: %v", tx.Hash())
-	if _, err := utils.WaitTx(ctx, o.cfg.Client, tx, nil); err != nil {
+	logex.Infof("submitted liveness proof: %v", tx.Hash())
+	if _, err := utils.WaitTx(ctx, o.cfg.AttestationClient, tx, nil); err != nil {
 		return logex.Trace(err)
 	}
 	logex.Infof("registered in TEELivenessVerifier: %v", tx.Hash())
@@ -440,6 +453,7 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 }
 
 func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
+	logex.Info("checking tee liveness...")
 	pubkeyBytes := o.cfg.BlsKey.PubKey.Serialize()
 	if len(pubkeyBytes) != 64 {
 		return logex.NewErrorf("invalid pubkey")

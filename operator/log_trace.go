@@ -19,26 +19,31 @@ type LogHandler interface {
 }
 
 type LogTracer struct {
-	id          string
-	wait        uint64
-	max         uint64
-	source      *ethclient.Client
-	filter      ethereum.FilterQuery
-	handler     LogHandler
-	skipOnError bool
+	id               string
+	wait             uint64
+	max              uint64
+	source           *ethclient.Client
+	filter           ethereum.FilterQuery
+	handler          LogHandler
+	skipOnError      bool
+	scanIntervalSecs int64
 }
 
 type LogTracerConfig struct {
-	Id          string
-	Wait        uint64
-	Max         uint64
-	Topics      [][]common.Hash
-	Addresses   []common.Address
-	Handler     LogHandler
-	SkipOnError bool
+	Id               string
+	Wait             uint64
+	Max              uint64
+	Topics           [][]common.Hash
+	Addresses        []common.Address
+	Handler          LogHandler
+	ScanIntervalSecs int64
+	SkipOnError      bool
 }
 
 func NewLogTracer(source *ethclient.Client, cfg *LogTracerConfig) *LogTracer {
+	if cfg.ScanIntervalSecs == 0 {
+		cfg.ScanIntervalSecs = 4
+	}
 	return &LogTracer{
 		id:          cfg.Id,
 		skipOnError: cfg.SkipOnError,
@@ -49,7 +54,8 @@ func NewLogTracer(source *ethclient.Client, cfg *LogTracerConfig) *LogTracer {
 			Addresses: cfg.Addresses,
 			Topics:    cfg.Topics,
 		},
-		handler: cfg.Handler,
+		scanIntervalSecs: cfg.ScanIntervalSecs,
+		handler:          cfg.Handler,
 	}
 }
 
@@ -68,7 +74,7 @@ func (l *LogTracer) saveOffset(off uint64) error {
 }
 
 func (l *LogTracer) Run(ctx context.Context) error {
-	println("run tracer id:", l.id)
+	logex.Info("starting log-tracer:", l.id)
 	start, err := l.handler.GetBlock()
 	if err != nil {
 		return logex.Trace(err)
@@ -92,14 +98,14 @@ scan:
 		default:
 			head, err = l.source.BlockNumber(ctx)
 			if err != nil {
-				logex.Error("fetch head fail: %v, retry in 1 secs...", err)
+				logex.Errorf("fetch head fail: %v, retry in 1 secs...", err)
 				l.sleepSecs(ctx, 1)
 				continue
 			}
 			head -= l.wait
 
 			if start >= head {
-				l.sleepSecs(ctx, 4)
+				l.sleepSecs(ctx, l.scanIntervalSecs)
 				continue
 			}
 

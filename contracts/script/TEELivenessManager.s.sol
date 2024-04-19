@@ -13,4 +13,10 @@ contract TEELivenessManager is Script {
         vm.startBroadcast();
         liveness.changeAttestValiditySeconds(secs);
     }
+
+    function sendAttestation(bytes calldata quote) public {
+        // string memory quote = vm.readFile(path);
+        vm.startBroadcast();
+        liveness.submitLivenessProof(quote);
+    }
 }

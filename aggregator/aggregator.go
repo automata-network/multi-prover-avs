@@ -2,6 +2,7 @@ package aggregator
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"net/http"
 	"os"
@@ -31,6 +32,7 @@ type Config struct {
 	EcdsaPrivateKey                    string
 	EthHttpEndpoint                    string
 	EthWsEndpoint                      string
+	AttestationLayerRpcURL             string
 	MultiProverContractAddress         common.Address
 	TEELivenessVerifierContractAddress common.Address
 
@@ -76,6 +78,10 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
+	attestationClient, err := ethclient.Dial(cfg.AttestationLayerRpcURL)
+	if err != nil {
+		return nil, logex.Trace(err, cfg.AttestationLayerRpcURL)
+	}
 	chainId, err := client.ChainID(ctx)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -111,7 +117,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
-	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddress, client)
+	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddress, attestationClient)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -193,6 +199,18 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 }
 
 func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) error {
+	if req.Task.Identifier.ToInt().Int64() == 1 {
+		var md Metadata
+		if err := json.Unmarshal([]byte(req.Task.Metadata), &md); err != nil {
+			return logex.Trace(err)
+		}
+		if md.BatchId > 0 {
+			if md.BatchId%2000 != 0 {
+				logex.Info("[scroll] skip task: %#v", md)
+				return nil
+			}
+		}
+	}
 	digest, err := req.Task.Digest()
 	if err != nil {
 		return logex.Trace(err)

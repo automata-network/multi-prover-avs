@@ -42,6 +42,7 @@ type ProverClient struct {
 }
 
 func NewProverClient(url string) (*ProverClient, error) {
+	logex.Infof("connecting to prover: %v ...", url)
 	client, err := rpc.Dial(url)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -53,6 +54,7 @@ func NewProverClient(url string) (*ProverClient, error) {
 
 type PoeResponse struct {
 	NotReady   bool   `json:"not_ready"`
+	BatchId    uint64 `json:"batch_id"`
 	StartBlock uint64 `json:"start_block"`
 	EndBlock   uint64 `json:"end_block"`
 	Poe        *Poe   `json:"poe"`

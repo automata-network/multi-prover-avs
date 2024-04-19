@@ -13,6 +13,7 @@ COPY contracts/bindings ./contracts/bindings
 COPY utils ./utils
 COPY go.mod ./
 COPY go.sum ./
+COPY vendor ./vendor
 
 
 RUN go build -o ./bin/operator ./cmd/operator
