@@ -11,7 +11,7 @@
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
 ![Automata Multi-Prover AVS Design](/assets/multiprover-design.png)
 
-Read this [blog](https://www.notion.so/atanetwork/Elevating-ZK-Security-with-Multi-Prover-AVS-cc1f4d1fc0b341d4a4b90a16f7b8bbb3) to understand more about the Multi-Prover AVS.
+Read this [blog](https://atanetwork.notion.site/Multi-Prover-AVS-with-TEE-545319c42885489196142d966f0ede86) to understand more about the Multi-Prover AVS.
 
 ## Directory Structure
 <pre>
