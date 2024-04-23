@@ -15,7 +15,7 @@ func TestAbi(t *testing.T) {
 	method := abi.Methods["confirmState"]
 	confirmState := method.Inputs[:1]
 	stateHeader := MultiProverServiceManager.IMultiProverServiceManagerStateHeader{
-		Identifier: big.NewInt(1),
+		CommitteeId: big.NewInt(1),
 	}
 	_ = stateHeader
 	var test MultiProverServiceManager.BN254G1Point

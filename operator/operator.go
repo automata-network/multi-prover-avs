@@ -3,7 +3,6 @@ package operator
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -13,10 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
+	sdkTypes "github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/automata-network/multi-prover-avs/aggregator"
-	"github.com/automata-network/multi-prover-avs/contracts/bindings"
-	"github.com/automata-network/multi-prover-avs/contracts/bindings/RegistryCoordinator"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/logex"
@@ -27,119 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 )
-
-type ConfigContext struct {
-	Config              *Config
-	BlsKey              *bls.KeyPair
-	AttestationEcdsaKey *ecdsa.PrivateKey
-	Client              *ethclient.Client
-	AttestationClient   *ethclient.Client
-	EigenClients        *clients.Clients
-}
-
-func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigContext, error) {
-	if ecdsaKey == nil {
-		var err error
-		ecdsaKey, err = crypto.GenerateKey()
-		if err != nil {
-			return nil, logex.Trace(err, "generate test ecdsa key")
-		}
-	}
-	var cfg Config
-	cfgData, err := os.ReadFile(cfgPath)
-	if err != nil {
-		return nil, logex.Trace(err)
-	}
-	if err := json.Unmarshal(cfgData, &cfg); err != nil {
-		return nil, logex.Trace(err, cfgPath)
-	}
-
-	kp, err := utils.ReadBlsKey(cfg.BlsKeyFile, cfg.BlsKeyPassword)
-	if err != nil {
-		return nil, logex.Trace(err, cfg.BlsKeyFile)
-	}
-
-	logger := logex.NewLoggerEx(os.Stderr)
-	elog := utils.NewLogger(logger)
-
-	logex.Debugf("connecting to EthRpcUrl %v...", cfg.EthRpcUrl)
-	client, err := ethclient.Dial(cfg.EthRpcUrl)
-	if err != nil {
-		return nil, logex.Trace(err, cfg.EthRpcUrl)
-	}
-	logex.Debugf("connecting to AttestationLayerRpcURL %v...", cfg.AttestationLayerRpcURL)
-	attestationClient, err := ethclient.Dial(cfg.AttestationLayerRpcURL)
-	if err != nil {
-		return nil, logex.Trace(err, "AttestationLayerRpcURL", cfg.AttestationLayerRpcURL)
-	}
-
-	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 cfg.EthRpcUrl,
-		EthWsUrl:                   cfg.EthWsUrl,
-		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress.String(),
-		OperatorStateRetrieverAddr: common.Address{}.String(),
-		AvsName:                    "multi-prover-operator",
-		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
-	}
-
-	logex.Debugf("build clients %#v", chainioConfig)
-	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaKey, elog)
-	if err != nil {
-		return nil, logex.Trace(err)
-	}
-
-	if cfg.Identifier == 0 {
-		cfg.Identifier = 1
-	}
-
-	attestationEcdsaKey, err := crypto.HexToECDSA(cfg.AttestationLayerEcdsaKey)
-	if err != nil {
-		return nil, logex.Trace(err, "AttestationLayerEcdsaKey")
-	}
-
-	return &ConfigContext{
-		Config:              &cfg,
-		BlsKey:              kp,
-		Client:              client,
-		EigenClients:        eigenClients,
-		AttestationEcdsaKey: attestationEcdsaKey,
-		AttestationClient:   attestationClient,
-	}, nil
-}
-
-type Config struct {
-	ProverURL     string
-	AggregatorURL string
-	Simulation    bool
-	Identifier    int64
-
-	TaskFetcher *TaskFetcher
-
-	BlsKeyFile     string
-	BlsKeyPassword string
-
-	EthRpcUrl string
-	EthWsUrl  string
-
-	AttestationLayerEcdsaKey string
-	AttestationLayerRpcURL   string
-
-	StrategyAddress            common.Address
-	RegistryCoordinatorAddress common.Address
-	TEELivenessVerifierAddress common.Address
-	EigenMetricsIpPortAddress  string
-}
-
-type TaskFetcher struct {
-	Endpoint         string
-	Topics           [][]common.Hash
-	Addresses        []common.Address
-	OffsetFile       string
-	ScanIntervalSecs int64
-}
 
 type Operator struct {
 	cfg    *ConfigContext
@@ -149,7 +34,9 @@ type Operator struct {
 
 	aggregator *aggregator.Client
 
-	operatorId [32]byte
+	operatorId    [32]byte
+	metrics       *Metrics
+	quorumNumbers []byte
 
 	proverClient *ProverClient
 	taskFetcher  *LogTracer
@@ -178,14 +65,33 @@ func NewOperator(path string) (*Operator, error) {
 
 	aggClient, err := aggregator.NewClient(cfg.Config.AggregatorURL)
 	if err != nil {
-		return nil, logex.Trace(err)
+		return nil, logex.Trace(err, "aggregatorURL:"+cfg.Config.AggregatorURL)
 	}
+
+	operatorAddress, err := cfg.QueryOperatorAddress()
+	if err != nil {
+		return nil, logex.Trace(err, "queryOperatorAddr")
+	}
+
+	if operatorAddress == utils.ZeroAddress {
+		return nil, logex.NewErrorf("operator is not registered")
+	}
+
+	quorumNames := map[sdkTypes.QuorumNum]string{
+		0: "Scroll SGX Quorum",
+	}
+	quorumNumbers := []byte{0}
+
+	metrics := NewMetrics(cfg.EigenClients, utils.NewLogger(logger), operatorAddress, cfg.Config.EigenMetricsIpPortAddress, quorumNames)
 
 	operator := &Operator{
 		cfg:                 cfg,
 		proverClient:        proverClient,
 		logger:              logger,
+		quorumNumbers:       quorumNumbers,
 		aggregator:          aggClient,
+		operatorAddress:     operatorAddress,
+		metrics:             metrics,
 		TEELivenessVerifier: TEELivenessVerifier,
 	}
 
@@ -272,7 +178,7 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 		Identifier:                 (*hexutil.Big)(big.NewInt(o.cfg.Config.Identifier)),
 		Metadata:                   mdBytes,
 		State:                      poe.Poe.Pack(),
-		QuorumNumbers:              []byte{0},
+		QuorumNumbers:              o.quorumNumbers,
 		QuorumThresholdPercentages: []byte{0},
 		ReferenceBlockNumber:       uint32(blockHeader.Number.Int64() - 1),
 	}
@@ -312,6 +218,11 @@ func (o *Operator) Start(ctx context.Context) error {
 	if err := o.RegisterAttestationReport(ctx); err != nil {
 		return logex.Trace(err, utils.EcdsaAddress(o.cfg.AttestationEcdsaKey))
 	}
+	errChan := o.metrics.Start(ctx)
+	go func() {
+		err := <-errChan
+		logex.Fatal(err)
+	}()
 
 	o.logger.Infof("Started Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v",
 		hex.EncodeToString(o.operatorId[:]),
@@ -328,20 +239,6 @@ func (o *Operator) Start(ctx context.Context) error {
 }
 
 func (o *Operator) checkIsRegistered() error {
-	registry, err := RegistryCoordinator.NewRegistryCoordinatorCaller(o.cfg.Config.RegistryCoordinatorAddress, o.cfg.Client)
-	if err != nil {
-		return logex.Trace(err)
-	}
-	operatorAddress, err := bindings.GetOperatorAddrFromBlsKey(o.cfg.BlsKey, o.cfg.Client, registry)
-	if err != nil {
-		return logex.Trace(err)
-	}
-	if operatorAddress == utils.ZeroAddress {
-		return logex.NewErrorf("operator is not registered")
-	}
-
-	o.operatorAddress = operatorAddress
-
 	operatorIsRegistered, err := o.cfg.EigenClients.AvsRegistryChainReader.IsOperatorRegistered(nil, o.operatorAddress)
 	if err != nil {
 		return logex.Trace(err)
