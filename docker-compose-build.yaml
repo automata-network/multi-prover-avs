@@ -9,8 +9,6 @@ services:
     build:
       context: .
       dockerfile: cmd/operator/Dockerfile
-    environment:
-      - BUILD_TAG=${BUILD_TAG}
     image: ghcr.io/automata-network/multi-prover-avs/operator:${BUILD_TAG}
   oprtool:
     build:
