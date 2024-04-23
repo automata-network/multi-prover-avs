@@ -1,14 +1,21 @@
 package bindings
 
 import (
+	"bytes"
+	"encoding/hex"
 	"math/big"
+	"strings"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	eigenSdkTypes "github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/BLSApkRegistry"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/ERC20"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -33,6 +40,36 @@ type Binding struct {
 
 type StateHeader = MultiProverServiceManager.IMultiProverServiceManagerStateHeader
 type ReducedStateHeader = MultiProverServiceManager.IMultiProverServiceManagerReducedStateHeader
+
+type BlsApkRegistryGetter interface {
+	BlsApkRegistry(opts *bind.CallOpts) (common.Address, error)
+}
+
+func GetBlsApkRegistryCaller(caller bind.ContractCaller, getter BlsApkRegistryGetter) (*BLSApkRegistry.BLSApkRegistryCaller, error) {
+	blsApkRegistryAddr, err := getter.BlsApkRegistry(nil)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	blsApkRegistry, err := BLSApkRegistry.NewBLSApkRegistryCaller(blsApkRegistryAddr, caller)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	return blsApkRegistry, nil
+}
+
+func GetOperatorAddrFromBlsKey(blskey *bls.KeyPair, caller bind.ContractCaller, getter BlsApkRegistryGetter) (common.Address, error) {
+
+	blsApkRegistry, err := GetBlsApkRegistryCaller(caller, getter)
+	if err != nil {
+		return common.Address{}, logex.Trace(err)
+	}
+	operatorId := eigenSdkTypes.OperatorIdFromKeyPair(blskey)
+	blsBindOperatorAddr, err := blsApkRegistry.GetOperatorFromPubkeyHash(nil, operatorId)
+	if err != nil {
+		return common.Address{}, logex.Trace(err)
+	}
+	return blsBindOperatorAddr, nil
+}
 
 func DigestStateHeader(s *StateHeader) (types.TaskResponseDigest, error) {
 	reduced := ReducedStateHeader{s.CommitteeId, s.Metadata, s.State, s.ReferenceBlockNumber}
@@ -64,4 +101,34 @@ func ConvertToBN254G2Point(input *bls.G2Point) MultiProverServiceManager.BN254G2
 		Y: [2]*big.Int{input.Y.A1.BigInt(big.NewInt(0)), input.Y.A0.BigInt(big.NewInt(0))},
 	}
 	return output
+}
+
+type JsonError interface {
+	Error() string
+	ErrorCode() int
+	ErrorData() interface{}
+}
+
+func MultiProverError(err error) error {
+	return DecodeError(MultiProverABI, err)
+}
+
+func DecodeError(abi *abi.ABI, err error) error {
+	je, ok := err.(JsonError)
+	if !ok {
+		return err
+	}
+	errorData, ok := je.ErrorData().(string)
+	if !ok {
+		return err
+	}
+	data, er := hex.DecodeString(strings.TrimPrefix(errorData, "0x"))
+	if er == nil {
+		for name, er := range abi.Errors {
+			if bytes.Equal(er.ID[:4], data) {
+				return logex.NewErrorf("%v: %v", je.Error(), name)
+			}
+		}
+	}
+	return logex.NewErrorf("%v: %v", je.Error(), errorData)
 }

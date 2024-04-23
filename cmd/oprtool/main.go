@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/automata-network/multi-prover-avs/contracts/bindings"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/ERC20"
 	"github.com/automata-network/multi-prover-avs/operator"
+	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/flagly"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,6 +29,7 @@ type OprTool struct {
 
 type OprToolOptIn struct {
 	Config       string `default:"config/operator.json"`
+	EcdsaKeyPath string `default:"~/.eigenlayer/operator_keys/operator.ecdsa.key.json"`
 	Socket       string `default:"Not Needed"`
 	Quorums      string `default:"0"`
 	SigValidSecs int64  `default:"1000000"`
@@ -49,7 +52,11 @@ func parseQuorums(n string) ([]eigenSdkTypes.QuorumNum, error) {
 }
 
 func (o *OprToolOptIn) FlaglyHandle() error {
-	ctx, err := operator.ParseConfigContext(o.Config)
+	ecdsaKey, err := utils.PromptEcdsaKey(o.EcdsaKeyPath)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	ctx, err := operator.ParseConfigContext(o.Config, ecdsaKey)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -67,14 +74,14 @@ func (o *OprToolOptIn) FlaglyHandle() error {
 	operatorToAvsRegistrationSigExpiry := big.NewInt(time.Now().Unix() + sigValidForSeconds)
 
 	receipt, err := ctx.EigenClients.AvsRegistryChainWriter.RegisterOperatorInQuorumWithAVSRegistryCoordinator(
-		context.Background(), ctx.EcdsaKey, operatorToAvsRegistrationSigSalt, operatorToAvsRegistrationSigExpiry, ctx.BlsKey, quorumNumbers, o.Socket,
+		context.Background(), ecdsaKey, operatorToAvsRegistrationSigSalt, operatorToAvsRegistrationSigExpiry, ctx.BlsKey, quorumNumbers, o.Socket,
 	)
 	if err != nil {
-		return logex.Trace(err)
+		return logex.Trace(bindings.MultiProverError(err))
 	}
 	logex.Infof("Registered operator with avs registry coordinator, succ: %v", receipt.Status == 1)
 
-	operatorId, err := ctx.EigenClients.AvsRegistryChainReader.GetOperatorId(nil, ctx.OperatorAddress)
+	operatorId, err := ctx.EigenClients.AvsRegistryChainReader.GetOperatorId(nil, utils.EcdsaAddress(ecdsaKey))
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -84,12 +91,17 @@ func (o *OprToolOptIn) FlaglyHandle() error {
 }
 
 type OprToolOptOut struct {
-	Config  string `default:"config/operator.json"`
-	Quorums string `default:"0"`
+	EcdsaKeyPath string `default:"~/.eigenlayer/operator_keys/operator.ecdsa.key.json"`
+	Config       string `default:"config/operator.json"`
+	Quorums      string `default:"0"`
 }
 
 func (o *OprToolOptOut) FlaglyHandle() error {
-	ctx, err := operator.ParseConfigContext(o.Config)
+	ecdsaKey, err := utils.PromptEcdsaKey(o.EcdsaKeyPath)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	ctx, err := operator.ParseConfigContext(o.Config, ecdsaKey)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -105,7 +117,7 @@ func (o *OprToolOptOut) FlaglyHandle() error {
 		regcoord.BN254G1Point(bindings.ConvertToBN254G1Point(ctx.BlsKey.GetPubKeyG1())),
 	)
 	if err != nil {
-		return logex.Trace(err)
+		return logex.Trace(bindings.MultiProverError(err))
 	}
 
 	logex.Infof("tx: %v, succ: %v", receipt.TxHash, receipt.Status == 1)
@@ -113,6 +125,7 @@ func (o *OprToolOptOut) FlaglyHandle() error {
 }
 
 type OprToolDeposit struct {
+	EcdsaKeyPath    string `default:"~/.eigenlayer/operator_keys/operator.ecdsa.key.json"`
 	Config          string `default:"config/operator.json"`
 	StrategyAddress string `name:"strategy"`
 	Amount          string `default:"32"`
@@ -120,7 +133,12 @@ type OprToolDeposit struct {
 }
 
 func (o *OprToolDeposit) FlaglyHandle() error {
-	ctx, err := operator.ParseConfigContext(o.Config)
+	ecdsaKey, err := utils.PromptEcdsaKey(o.EcdsaKeyPath)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	operatorAddress := utils.EcdsaAddress(ecdsaKey)
+	ctx, err := operator.ParseConfigContext(o.Config, ecdsaKey)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -130,17 +148,18 @@ func (o *OprToolDeposit) FlaglyHandle() error {
 		return flagly.ErrShowUsage
 	}
 	registered, err := ctx.EigenClients.ElChainReader.IsOperatorRegistered(nil, eigenSdkTypes.Operator{
-		Address: ctx.OperatorAddress.String(),
+		Address: operatorAddress.String(),
 	})
 	if err != nil {
-		return logex.Trace(err)
+		return logex.Trace(bindings.MultiProverError(err))
 	}
 	if !registered {
-		return logex.NewErrorf("operator not registered")
+		return logex.NewErrorf("operator[%v] not registered", operatorAddress)
 	}
 
 	_, tokenAddr, err := ctx.EigenClients.ElChainReader.GetStrategyAndUnderlyingToken(nil, strategyAddress)
 	if err != nil {
+		err = bindings.MultiProverError(err)
 		return logex.Trace(err, "Failed to fetch strategy contract")
 	}
 
@@ -157,10 +176,6 @@ func (o *OprToolDeposit) FlaglyHandle() error {
 	if !ok {
 		return logex.NewError("parseAmount")
 	}
-	// {
-	// 	fixFactor, _ := new(big.Float).SetString("1.001")
-	// 	amountF = new(big.Float).Mul(amountF.Mul(amountF, decimalF), fixFactor)
-	// }
 
 	amountF = amountF.Mul(amountF, decimalF)
 
@@ -170,19 +185,21 @@ func (o *OprToolDeposit) FlaglyHandle() error {
 	if !o.Check {
 		receipt, err := ctx.EigenClients.ElChainWriter.DepositERC20IntoStrategy(context.Background(), strategyAddress, amount)
 		if err != nil {
-			return logex.Trace(err, "Error depositing into strategy")
+			return logex.Trace(bindings.MultiProverError(err), "Error depositing into strategy")
 		}
 		logex.Infof("tx: %v, succ: %v", receipt.TxHash, receipt.Status == 1)
 	}
 
-	shares, err := ctx.EigenClients.ElChainReader.GetOperatorSharesInStrategy(nil, ctx.OperatorAddress, strategyAddress)
+	shares, err := ctx.EigenClients.ElChainReader.GetOperatorSharesInStrategy(nil, operatorAddress, strategyAddress)
 	if err != nil {
-		return logex.Trace(err)
+		return logex.Trace(bindings.MultiProverError(err))
 	}
 	logex.Infof("current shares: %v", shares)
 	return nil
 }
 
 func main() {
-	flagly.Run(&OprTool{})
+	if err := flagly.RunByArgs(&OprTool{}, os.Args); err != nil {
+		logex.Fatal(err)
+	}
 }

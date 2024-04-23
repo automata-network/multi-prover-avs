@@ -42,7 +42,7 @@ type LogTracerConfig struct {
 
 func NewLogTracer(source *ethclient.Client, cfg *LogTracerConfig) *LogTracer {
 	if cfg.ScanIntervalSecs == 0 {
-		cfg.ScanIntervalSecs = 4
+		cfg.ScanIntervalSecs = 12
 	}
 	return &LogTracer{
 		id:          cfg.Id,

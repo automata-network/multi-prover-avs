@@ -10,13 +10,13 @@ import (
 	"io"
 	"math/big"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/automata-network/multi-prover-avs/aggregator"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/RegistryCoordinator"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/chzyer/logex"
@@ -29,60 +29,48 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
-
-	sdkecdsa "github.com/Layr-Labs/eigensdk-go/crypto/ecdsa"
 )
 
 type ConfigContext struct {
-	Config            *Config
-	BlsKey            *bls.KeyPair
-	EcdsaKey          *ecdsa.PrivateKey
-	OperatorAddress   common.Address
-	Client            *ethclient.Client
-	AttestationClient *ethclient.Client
-	EigenClients      *clients.Clients
+	Config              *Config
+	BlsKey              *bls.KeyPair
+	AttestationEcdsaKey *ecdsa.PrivateKey
+	Client              *ethclient.Client
+	AttestationClient   *ethclient.Client
+	EigenClients        *clients.Clients
 }
 
-func fixFilepath(path string) string {
-	if strings.HasPrefix(path, "~/") {
-		homeDir, err := os.UserHomeDir()
+func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigContext, error) {
+	if ecdsaKey == nil {
+		var err error
+		ecdsaKey, err = crypto.GenerateKey()
 		if err != nil {
-			logex.Fatal(err)
+			return nil, logex.Trace(err, "generate test ecdsa key")
 		}
-		path = filepath.Join(homeDir, path[2:])
 	}
-	return path
-}
-
-func ParseConfigContext(cfgPath string) (*ConfigContext, error) {
 	var cfg Config
 	cfgData, err := os.ReadFile(cfgPath)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
 	if err := json.Unmarshal(cfgData, &cfg); err != nil {
-		return nil, logex.Trace(err)
+		return nil, logex.Trace(err, cfgPath)
 	}
 
-	kp, err := bls.ReadPrivateKeyFromFile(fixFilepath(cfg.BlsKeyFile), cfg.BlsKeyPassword)
+	kp, err := utils.ReadBlsKey(cfg.BlsKeyFile, cfg.BlsKeyPassword)
 	if err != nil {
-		return nil, logex.Trace(err)
+		return nil, logex.Trace(err, cfg.BlsKeyFile)
 	}
 
 	logger := logex.NewLoggerEx(os.Stderr)
 	elog := utils.NewLogger(logger)
-	ecdsaPrivateKey, err := sdkecdsa.ReadKey(fixFilepath(cfg.EcdsaKeyFile), cfg.EcdsaKeyPassword)
-	if err != nil {
-		return nil, logex.Trace(err)
-	}
-	operatorAddress := crypto.PubkeyToAddress(*ecdsaPrivateKey.Public().(*ecdsa.PublicKey))
 
-	logex.Infof("connecting to %v...", cfg.EthRpcUrl)
+	logex.Debugf("connecting to EthRpcUrl %v...", cfg.EthRpcUrl)
 	client, err := ethclient.Dial(cfg.EthRpcUrl)
 	if err != nil {
-		return nil, logex.Trace(err)
+		return nil, logex.Trace(err, cfg.EthRpcUrl)
 	}
-	logex.Infof("connecting to %v...", cfg.AttestationLayerRpcURL)
+	logex.Debugf("connecting to AttestationLayerRpcURL %v...", cfg.AttestationLayerRpcURL)
 	attestationClient, err := ethclient.Dial(cfg.AttestationLayerRpcURL)
 	if err != nil {
 		return nil, logex.Trace(err, "AttestationLayerRpcURL", cfg.AttestationLayerRpcURL)
@@ -97,8 +85,8 @@ func ParseConfigContext(cfgPath string) (*ConfigContext, error) {
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
 
-	logex.Infof("build clients %#v", chainioConfig)
-	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaPrivateKey, elog)
+	logex.Debugf("build clients %#v", chainioConfig)
+	eigenClients, err := clients.BuildAll(chainioConfig, ecdsaKey, elog)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -107,14 +95,18 @@ func ParseConfigContext(cfgPath string) (*ConfigContext, error) {
 		cfg.Identifier = 1
 	}
 
+	attestationEcdsaKey, err := crypto.HexToECDSA(cfg.AttestationLayerEcdsaKey)
+	if err != nil {
+		return nil, logex.Trace(err, "AttestationLayerEcdsaKey")
+	}
+
 	return &ConfigContext{
-		Config:            &cfg,
-		BlsKey:            kp,
-		Client:            client,
-		EcdsaKey:          ecdsaPrivateKey,
-		EigenClients:      eigenClients,
-		OperatorAddress:   operatorAddress,
-		AttestationClient: attestationClient,
+		Config:              &cfg,
+		BlsKey:              kp,
+		Client:              client,
+		EigenClients:        eigenClients,
+		AttestationEcdsaKey: attestationEcdsaKey,
+		AttestationClient:   attestationClient,
 	}, nil
 }
 
@@ -126,15 +118,14 @@ type Config struct {
 
 	TaskFetcher *TaskFetcher
 
-	BlsKeyFile       string
-	BlsKeyPassword   string
-	EcdsaKeyFile     string
-	EcdsaKeyPassword string
+	BlsKeyFile     string
+	BlsKeyPassword string
 
 	EthRpcUrl string
 	EthWsUrl  string
 
-	AttestationLayerRpcURL string
+	AttestationLayerEcdsaKey string
+	AttestationLayerRpcURL   string
 
 	StrategyAddress            common.Address
 	RegistryCoordinatorAddress common.Address
@@ -154,6 +145,8 @@ type Operator struct {
 	cfg    *ConfigContext
 	logger *logex.Logger
 
+	operatorAddress common.Address
+
 	aggregator *aggregator.Client
 
 	operatorId [32]byte
@@ -166,7 +159,7 @@ type Operator struct {
 }
 
 func NewOperator(path string) (*Operator, error) {
-	cfg, err := ParseConfigContext(path)
+	cfg, err := ParseConfigContext(path, nil)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -280,7 +273,7 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 		Metadata:                   mdBytes,
 		State:                      poe.Poe.Pack(),
 		QuorumNumbers:              []byte{0},
-		QuorumThresholdPercentages: []byte{3},
+		QuorumThresholdPercentages: []byte{0},
 		ReferenceBlockNumber:       uint32(blockHeader.Number.Int64() - 1),
 	}
 
@@ -317,12 +310,12 @@ func (o *Operator) Start(ctx context.Context) error {
 		return logex.Trace(err)
 	}
 	if err := o.RegisterAttestationReport(ctx); err != nil {
-		return logex.Trace(err)
+		return logex.Trace(err, utils.EcdsaAddress(o.cfg.AttestationEcdsaKey))
 	}
 
 	o.logger.Infof("Started Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v",
 		hex.EncodeToString(o.operatorId[:]),
-		o.cfg.OperatorAddress,
+		o.operatorAddress,
 		o.cfg.BlsKey.GetPubKeyG1(),
 		o.cfg.BlsKey.GetPubKeyG2(),
 	)
@@ -335,14 +328,28 @@ func (o *Operator) Start(ctx context.Context) error {
 }
 
 func (o *Operator) checkIsRegistered() error {
-	operatorIsRegistered, err := o.cfg.EigenClients.AvsRegistryChainReader.IsOperatorRegistered(nil, o.cfg.OperatorAddress)
+	registry, err := RegistryCoordinator.NewRegistryCoordinatorCaller(o.cfg.Config.RegistryCoordinatorAddress, o.cfg.Client)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	operatorAddress, err := bindings.GetOperatorAddrFromBlsKey(o.cfg.BlsKey, o.cfg.Client, registry)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	if operatorAddress == utils.ZeroAddress {
+		return logex.NewErrorf("operator is not registered")
+	}
+
+	o.operatorAddress = operatorAddress
+
+	operatorIsRegistered, err := o.cfg.EigenClients.AvsRegistryChainReader.IsOperatorRegistered(nil, o.operatorAddress)
 	if err != nil {
 		return logex.Trace(err)
 	}
 	if !operatorIsRegistered {
-		return logex.NewErrorf("operator is not registered")
+		return logex.NewErrorf("operator[%v] is not registered", o.operatorAddress)
 	}
-	o.operatorId, err = o.cfg.EigenClients.AvsRegistryChainReader.GetOperatorId(nil, o.cfg.OperatorAddress)
+	o.operatorId, err = o.cfg.EigenClients.AvsRegistryChainReader.GetOperatorId(nil, o.operatorAddress)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -435,7 +442,7 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 	if err != nil {
 		return logex.Trace(err)
 	}
-	opt, err := bind.NewKeyedTransactorWithChainID(o.cfg.EcdsaKey, chainId)
+	opt, err := bind.NewKeyedTransactorWithChainID(o.cfg.AttestationEcdsaKey, chainId)
 	if err != nil {
 		return logex.Trace(err)
 	}
@@ -487,8 +494,8 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 		deadline := prover.Time.Int64() + validSecs.Int64()
 		now := time.Now().Unix()
 		logex.Info("next attestation will be at", time.Unix(deadline, 0))
-		if deadline > now+60 {
-			time.Sleep(time.Duration(deadline-now-60) * time.Second)
+		if deadline > now+300 {
+			time.Sleep(time.Duration(deadline-now-300) * time.Second)
 		}
 		return o.registerAttestationReport(ctx, pubkeyBytes)
 	}

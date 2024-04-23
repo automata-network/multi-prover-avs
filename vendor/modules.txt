@@ -65,6 +65,9 @@ github.com/chzyer/flagly
 # github.com/chzyer/logex v1.2.1
 ## explicit; go 1.15
 github.com/chzyer/logex
+# github.com/chzyer/readline v1.5.1
+## explicit; go 1.15
+github.com/chzyer/readline
 # github.com/cockroachdb/errors v1.9.1
 ## explicit; go 1.13
 # github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b
