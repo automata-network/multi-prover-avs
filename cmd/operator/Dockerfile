@@ -15,8 +15,14 @@ COPY go.mod ./
 COPY go.sum ./
 COPY vendor ./vendor
 
+ARG BUILD_TAG
+ARG GIT_COMMIT
+ARG GIT_DATE
+ENV BUILD_TAG $BUILD_TAG
+ENV GIT_COMMIT $GIT_COMMIT
+ENV GIT_DATE $GIT_DATE
 
-RUN go build -o ./bin/operator ./cmd/operator
+RUN go build -ldflags "-X main.SemVer=${BUILD_TAG} -X main.GitCommit=${GIT_COMMIT} -X main.GitDate=${GIT_DATE}" -o ./bin/operator ./cmd/operator
 
 FROM alpine:3.18
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"os"
 	"strconv"
@@ -21,6 +22,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+var (
+	SemVer    = "0.1.0"
+	GitCommit = "(unknown)"
+	GitDate   = "(unknown)"
+)
+
 type OprTool struct {
 	OptIn   *OprToolOptIn   `flagly:"handler"`
 	OptOut  *OprToolOptOut  `flagly:"handler"`
@@ -33,6 +40,7 @@ type OprToolOptIn struct {
 	Socket       string `default:"Not Needed"`
 	Quorums      string `default:"0"`
 	SigValidSecs int64  `default:"1000000"`
+	Version      bool   `name:"v"`
 }
 
 func parseQuorums(n string) ([]eigenSdkTypes.QuorumNum, error) {
@@ -52,6 +60,10 @@ func parseQuorums(n string) ([]eigenSdkTypes.QuorumNum, error) {
 }
 
 func (o *OprToolOptIn) FlaglyHandle() error {
+	if o.Version {
+		fmt.Printf("Version:%v, GitCommit:%v, GitDate:%v\n", SemVer, GitCommit, GitDate)
+		return nil
+	}
 	ecdsaKey, err := utils.PromptEcdsaKey(o.EcdsaKeyPath)
 	if err != nil {
 		return logex.Trace(err)
@@ -94,9 +106,14 @@ type OprToolOptOut struct {
 	EcdsaKeyPath string `default:"~/.eigenlayer/operator_keys/operator.ecdsa.key.json"`
 	Config       string `default:"config/operator.json"`
 	Quorums      string `default:"0"`
+	Version      bool   `name:"v"`
 }
 
 func (o *OprToolOptOut) FlaglyHandle() error {
+	if o.Version {
+		fmt.Printf("Version:%v, GitCommit:%v, GitDate:%v\n", SemVer, GitCommit, GitDate)
+		return nil
+	}
 	ecdsaKey, err := utils.PromptEcdsaKey(o.EcdsaKeyPath)
 	if err != nil {
 		return logex.Trace(err)
@@ -130,9 +147,14 @@ type OprToolDeposit struct {
 	StrategyAddress string `name:"strategy"`
 	Amount          string `default:"32"`
 	Check           bool
+	Version         bool `name:"v"`
 }
 
 func (o *OprToolDeposit) FlaglyHandle() error {
+	if o.Version {
+		fmt.Printf("Version:%v, GitCommit:%v, GitDate:%v\n", SemVer, GitCommit, GitDate)
+		return nil
+	}
 	ecdsaKey, err := utils.PromptEcdsaKey(o.EcdsaKeyPath)
 	if err != nil {
 		return logex.Trace(err)

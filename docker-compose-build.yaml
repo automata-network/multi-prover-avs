@@ -4,14 +4,16 @@ services:
     build:
       context: .
       dockerfile: cmd/aggregator/Dockerfile
-    image: ghcr.io/automata-network/multi-prover-avs/aggregator:${BUILD_TAG:-latest}
+    image: ghcr.io/automata-network/multi-prover-avs/aggregator:${BUILD_TAG}
   operator:
     build:
       context: .
       dockerfile: cmd/operator/Dockerfile
-    image: ghcr.io/automata-network/multi-prover-avs/operator:${BUILD_TAG:-latest}
+    environment:
+      - BUILD_TAG=${BUILD_TAG}
+    image: ghcr.io/automata-network/multi-prover-avs/operator:${BUILD_TAG}
   oprtool:
     build:
       context: .
       dockerfile: cmd/oprtool/Dockerfile
-    image: ghcr.io/automata-network/multi-prover-avs/oprtool:${BUILD_TAG:-latest}
+    image: ghcr.io/automata-network/multi-prover-avs/oprtool:${BUILD_TAG}

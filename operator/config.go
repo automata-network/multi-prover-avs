@@ -17,10 +17,7 @@ import (
 )
 
 const (
-	AppName   = "multi-prover-operator"
-	SemVer    = "0.1.0"
-	GitCommit = ""
-	GitDate   = ""
+	AppName = "multi-prover-operator"
 )
 
 type ConfigContext struct {
