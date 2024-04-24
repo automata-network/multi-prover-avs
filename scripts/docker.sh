@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
 function build() {
-    docker-compose -f docker-compose-build.yaml build
+    GIT_DATE=$(date +%FT%T%z)
+    GIT_COMMIT=$(git rev-parse HEAD)
+    docker-compose -f docker-compose-build.yaml build --build-arg BUILD_TAG=$BUILD_TAG --build-arg GIT_DATE=$GIT_DATE --build-arg GIT_COMMIT=$GIT_COMMIT "$@"
 }
 
 function stop() {

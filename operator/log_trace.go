@@ -19,34 +19,43 @@ type LogHandler interface {
 }
 
 type LogTracer struct {
-	id      string
-	wait    uint64
-	max     uint64
-	source  *ethclient.Client
-	filter  ethereum.FilterQuery
-	handler LogHandler
+	id               string
+	wait             uint64
+	max              uint64
+	source           *ethclient.Client
+	filter           ethereum.FilterQuery
+	handler          LogHandler
+	skipOnError      bool
+	scanIntervalSecs int64
 }
 
 type LogTracerConfig struct {
-	Id        string
-	Wait      uint64
-	Max       uint64
-	Topics    [][]common.Hash
-	Addresses []common.Address
-	Handler   LogHandler
+	Id               string
+	Wait             uint64
+	Max              uint64
+	Topics           [][]common.Hash
+	Addresses        []common.Address
+	Handler          LogHandler
+	ScanIntervalSecs int64
+	SkipOnError      bool
 }
 
 func NewLogTracer(source *ethclient.Client, cfg *LogTracerConfig) *LogTracer {
+	if cfg.ScanIntervalSecs == 0 {
+		cfg.ScanIntervalSecs = 12
+	}
 	return &LogTracer{
-		id:     cfg.Id,
-		source: source,
-		wait:   cfg.Wait,
-		max:    cfg.Max,
+		id:          cfg.Id,
+		skipOnError: cfg.SkipOnError,
+		source:      source,
+		wait:        cfg.Wait,
+		max:         cfg.Max,
 		filter: ethereum.FilterQuery{
 			Addresses: cfg.Addresses,
 			Topics:    cfg.Topics,
 		},
-		handler: cfg.Handler,
+		scanIntervalSecs: cfg.ScanIntervalSecs,
+		handler:          cfg.Handler,
 	}
 }
 
@@ -65,7 +74,7 @@ func (l *LogTracer) saveOffset(off uint64) error {
 }
 
 func (l *LogTracer) Run(ctx context.Context) error {
-	println("run tracer id:", l.id)
+	logex.Info("starting log-tracer:", l.id)
 	start, err := l.handler.GetBlock()
 	if err != nil {
 		return logex.Trace(err)
@@ -89,14 +98,14 @@ scan:
 		default:
 			head, err = l.source.BlockNumber(ctx)
 			if err != nil {
-				logex.Error("fetch head fail: %v, retry in 1 secs...", err)
+				logex.Errorf("fetch head fail: %v, retry in 1 secs...", err)
 				l.sleepSecs(ctx, 1)
 				continue
 			}
 			head -= l.wait
 
 			if start >= head {
-				l.sleepSecs(ctx, 4)
+				l.sleepSecs(ctx, l.scanIntervalSecs)
 				continue
 			}
 
@@ -118,12 +127,14 @@ scan:
 			for _, log := range logs {
 				if err := l.handler.OnNewLog(ctx, &log); err != nil {
 					logex.Errorf("[%v] process logs fail => %v", log.BlockNumber, err)
-					l.sleepSecs(ctx, 4)
 					if log.BlockNumber-1 > start {
 						start = log.BlockNumber
 						l.saveOffset(start)
 					}
-					continue scan
+					l.sleepSecs(ctx, 4)
+					if !l.skipOnError {
+						continue scan
+					}
 				}
 			}
 			logex.Infof("[%v] scan %v -> %v, logs: %v", l.id, start, end, len(logs))

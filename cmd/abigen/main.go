@@ -10,13 +10,23 @@ import (
 )
 
 func main() {
-	if err := gen("contracts/bindings", "contracts/out/", "MultiProverServiceManager"); err != nil {
+	target := "contracts/bindings"
+	if err := gen(target, "contracts/out/", "MultiProverServiceManager"); err != nil {
 		logex.Fatal(err)
 	}
-	if err := gen("contracts/bindings", "contracts/dcap-v3-attestation/out/", "AutomataDcapV3Attestation"); err != nil {
+	if err := gen(target, "contracts/dcap-v3-attestation/out/", "AutomataDcapV3Attestation"); err != nil {
 		logex.Fatal(err)
 	}
-	if err := gen("contracts/bindings", "contracts/out/", "TEELivenessVerifier"); err != nil {
+	if err := gen(target, "contracts/out/", "TEELivenessVerifier"); err != nil {
+		logex.Fatal(err)
+	}
+	if err := gen(target, "contracts/out/", "BLSApkRegistry"); err != nil {
+		logex.Fatal(err)
+	}
+	if err := gen(target, "contracts/out/", "RegistryCoordinator"); err != nil {
+		logex.Fatal(err)
+	}
+	if err := gen(target, "contracts/out/ERC20", "ERC20"); err != nil {
 		logex.Fatal(err)
 	}
 }

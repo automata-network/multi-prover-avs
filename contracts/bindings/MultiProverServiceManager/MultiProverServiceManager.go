@@ -59,9 +59,17 @@ type IBLSSignatureCheckerQuorumStakeTotals struct {
 	TotalStakeForQuorum  []*big.Int
 }
 
+// IMultiProverServiceManagerCommittee is an auto generated low-level Go binding around an user-defined struct.
+type IMultiProverServiceManagerCommittee struct {
+	Id               *big.Int
+	Description      string
+	Metadata         []byte
+	TeeQuorumNumbers []byte
+}
+
 // IMultiProverServiceManagerReducedStateHeader is an auto generated low-level Go binding around an user-defined struct.
 type IMultiProverServiceManagerReducedStateHeader struct {
-	Identifier           *big.Int
+	CommitteeId          *big.Int
 	Metadata             []byte
 	State                []byte
 	ReferenceBlockNumber uint32
@@ -69,12 +77,18 @@ type IMultiProverServiceManagerReducedStateHeader struct {
 
 // IMultiProverServiceManagerStateHeader is an auto generated low-level Go binding around an user-defined struct.
 type IMultiProverServiceManagerStateHeader struct {
-	Identifier                 *big.Int
+	CommitteeId                *big.Int
 	Metadata                   []byte
 	State                      []byte
 	QuorumNumbers              []byte
 	QuorumThresholdPercentages []byte
 	ReferenceBlockNumber       uint32
+}
+
+// IMultiProverServiceManagerTEEQuorum is an auto generated low-level Go binding around an user-defined struct.
+type IMultiProverServiceManagerTEEQuorum struct {
+	TeeType      uint8
+	QuorumNumber uint8
 }
 
 // ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
@@ -86,7 +100,7 @@ type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 
 // MultiProverServiceManagerMetaData contains all meta data concerning the MultiProverServiceManager contract.
 var MultiProverServiceManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"contractIAVSDirectory\",\"name\":\"__avsDirectory\",\"type\":\"address\"},{\"internalType\":\"contractIRegistryCoordinator\",\"name\":\"__registryCoordinator\",\"type\":\"address\"},{\"internalType\":\"contractIStakeRegistry\",\"name\":\"__stakeRegistry\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newPausedStatus\",\"type\":\"uint256\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"contractIPauserRegistry\",\"name\":\"pauserRegistry\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"contractIPauserRegistry\",\"name\":\"newPauserRegistry\",\"type\":\"address\"}],\"name\":\"PauserRegistrySet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"value\",\"type\":\"bool\"}],\"name\":\"StaleStakesForbiddenUpdate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"identifier\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"metadata\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"state\",\"type\":\"bytes\"}],\"name\":\"StateConfirmed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"previousConfirmer\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"currentConfirmer\",\"type\":\"address\"}],\"name\":\"StateConfirmerUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newPausedStatus\",\"type\":\"uint256\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"PAUSED_SUBMIT_STATE\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"THRESHOLD_DENOMINATOR\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"identifier\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"metadata\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"state\",\"type\":\"bytes\"},{\"internalType\":\"uint32\",\"name\":\"referenceBlockNumber\",\"type\":\"uint32\"}],\"internalType\":\"structIMultiProverServiceManager.ReducedStateHeader\",\"name\":\"reducedStateHeader\",\"type\":\"tuple\"}],\"name\":\"_hashReducedStateHeader\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"avsDirectory\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"blsApkRegistry\",\"outputs\":[{\"internalType\":\"contractIBLSApkRegistry\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"msgHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"quorumNumbers\",\"type\":\"bytes\"},{\"internalType\":\"uint32\",\"name\":\"referenceBlockNumber\",\"type\":\"uint32\"},{\"components\":[{\"internalType\":\"uint32[]\",\"name\":\"nonSignerQuorumBitmapIndices\",\"type\":\"uint32[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point[]\",\"name\":\"nonSignerPubkeys\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point[]\",\"name\":\"quorumApks\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"uint256[2]\",\"name\":\"X\",\"type\":\"uint256[2]\"},{\"internalType\":\"uint256[2]\",\"name\":\"Y\",\"type\":\"uint256[2]\"}],\"internalType\":\"structBN254.G2Point\",\"name\":\"apkG2\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point\",\"name\":\"sigma\",\"type\":\"tuple\"},{\"internalType\":\"uint32[]\",\"name\":\"quorumApkIndices\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32[]\",\"name\":\"totalStakeIndices\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32[][]\",\"name\":\"nonSignerStakeIndices\",\"type\":\"uint32[][]\"}],\"internalType\":\"structIBLSSignatureChecker.NonSignerStakesAndSignature\",\"name\":\"params\",\"type\":\"tuple\"}],\"name\":\"checkSignatures\",\"outputs\":[{\"components\":[{\"internalType\":\"uint96[]\",\"name\":\"signedStakeForQuorum\",\"type\":\"uint96[]\"},{\"internalType\":\"uint96[]\",\"name\":\"totalStakeForQuorum\",\"type\":\"uint96[]\"}],\"internalType\":\"structIBLSSignatureChecker.QuorumStakeTotals\",\"name\":\"\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"identifier\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"metadata\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"state\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"quorumNumbers\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"quorumThresholdPercentages\",\"type\":\"bytes\"},{\"internalType\":\"uint32\",\"name\":\"referenceBlockNumber\",\"type\":\"uint32\"}],\"internalType\":\"structIMultiProverServiceManager.StateHeader\",\"name\":\"stateHeader\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint32[]\",\"name\":\"nonSignerQuorumBitmapIndices\",\"type\":\"uint32[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point[]\",\"name\":\"nonSignerPubkeys\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point[]\",\"name\":\"quorumApks\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"uint256[2]\",\"name\":\"X\",\"type\":\"uint256[2]\"},{\"internalType\":\"uint256[2]\",\"name\":\"Y\",\"type\":\"uint256[2]\"}],\"internalType\":\"structBN254.G2Point\",\"name\":\"apkG2\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point\",\"name\":\"sigma\",\"type\":\"tuple\"},{\"internalType\":\"uint32[]\",\"name\":\"quorumApkIndices\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32[]\",\"name\":\"totalStakeIndices\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32[][]\",\"name\":\"nonSignerStakeIndices\",\"type\":\"uint32[][]\"}],\"internalType\":\"structIBLSSignatureChecker.NonSignerStakesAndSignature\",\"name\":\"nonSignerStakesAndSignature\",\"type\":\"tuple\"}],\"name\":\"confirmState\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"delegation\",\"outputs\":[{\"internalType\":\"contractIDelegationManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"deregisterOperatorFromAVS\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"getOperatorRestakedStrategies\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getRestakeableStrategies\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIPauserRegistry\",\"name\":\"_pauserRegistry\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_initialPausedStatus\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_initialOwner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_stateConfirmer\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPausedStatus\",\"type\":\"uint256\"}],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pauseAll\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"index\",\"type\":\"uint8\"}],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pauserRegistry\",\"outputs\":[{\"internalType\":\"contractIPauserRegistry\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"},{\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"expiry\",\"type\":\"uint256\"}],\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"name\":\"operatorSignature\",\"type\":\"tuple\"}],\"name\":\"registerOperatorToAVS\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"registryCoordinator\",\"outputs\":[{\"internalType\":\"contractIRegistryCoordinator\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIPauserRegistry\",\"name\":\"newPauserRegistry\",\"type\":\"address\"}],\"name\":\"setPauserRegistry\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"value\",\"type\":\"bool\"}],\"name\":\"setStaleStakesForbidden\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_stateConfirmer\",\"type\":\"address\"}],\"name\":\"setStateConfirmer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stakeRegistry\",\"outputs\":[{\"internalType\":\"contractIStakeRegistry\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"staleStakesForbidden\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stateConfirmer\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"taskId\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"name\":\"taskIdToMetadataHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"msgHash\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point\",\"name\":\"apk\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256[2]\",\"name\":\"X\",\"type\":\"uint256[2]\"},{\"internalType\":\"uint256[2]\",\"name\":\"Y\",\"type\":\"uint256[2]\"}],\"internalType\":\"structBN254.G2Point\",\"name\":\"apkG2\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structBN254.G1Point\",\"name\":\"sigma\",\"type\":\"tuple\"}],\"name\":\"trySignatureAndApkVerification\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"pairingSuccessful\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"siganatureIsValid\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPausedStatus\",\"type\":\"uint256\"}],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_metadataURI\",\"type\":\"string\"}],\"name\":\"updateAVSMetadataURI\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"__avsDirectory\",\"type\":\"address\",\"internalType\":\"contractIAVSDirectory\"},{\"name\":\"__registryCoordinator\",\"type\":\"address\",\"internalType\":\"contractIRegistryCoordinator\"},{\"name\":\"__stakeRegistry\",\"type\":\"address\",\"internalType\":\"contractIStakeRegistry\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"PAUSED_OPERTOR_REGISTRATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PAUSED_SUBMIT_STATE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"THRESHOLD_DENOMINATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"_hashReducedStateHeader\",\"inputs\":[{\"name\":\"reducedStateHeader\",\"type\":\"tuple\",\"internalType\":\"structIMultiProverServiceManager.ReducedStateHeader\",\"components\":[{\"name\":\"committeeId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"metadata\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"state\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"addCommittee\",\"inputs\":[{\"name\":\"committee\",\"type\":\"tuple\",\"internalType\":\"structIMultiProverServiceManager.Committee\",\"components\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"description\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"metadata\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"teeQuorumNumbers\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTEEQuorum\",\"inputs\":[{\"name\":\"teeQuorum\",\"type\":\"tuple\",\"internalType\":\"structIMultiProverServiceManager.TEEQuorum\",\"components\":[{\"name\":\"teeType\",\"type\":\"uint8\",\"internalType\":\"enumIMultiProverServiceManager.TEE\"},{\"name\":\"quorumNumber\",\"type\":\"uint8\",\"internalType\":\"uint8\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"avsDirectory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"blacklistOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"blsApkRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBLSApkRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"checkSignatures\",\"inputs\":[{\"name\":\"msgHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"quorumNumbers\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"params\",\"type\":\"tuple\",\"internalType\":\"structIBLSSignatureChecker.NonSignerStakesAndSignature\",\"components\":[{\"name\":\"nonSignerQuorumBitmapIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"nonSignerPubkeys\",\"type\":\"tuple[]\",\"internalType\":\"structBN254.G1Point[]\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"quorumApks\",\"type\":\"tuple[]\",\"internalType\":\"structBN254.G1Point[]\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apkG2\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"sigma\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"quorumApkIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"totalStakeIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"nonSignerStakeIndices\",\"type\":\"uint32[][]\",\"internalType\":\"uint32[][]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIBLSSignatureChecker.QuorumStakeTotals\",\"components\":[{\"name\":\"signedStakeForQuorum\",\"type\":\"uint96[]\",\"internalType\":\"uint96[]\"},{\"name\":\"totalStakeForQuorum\",\"type\":\"uint96[]\",\"internalType\":\"uint96[]\"}]},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"committeeManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"committees\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"description\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"metadata\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"teeQuorumNumbers\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmState\",\"inputs\":[{\"name\":\"stateHeader\",\"type\":\"tuple\",\"internalType\":\"structIMultiProverServiceManager.StateHeader\",\"components\":[{\"name\":\"committeeId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"metadata\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"state\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"quorumNumbers\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"quorumThresholdPercentages\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"nonSignerStakesAndSignature\",\"type\":\"tuple\",\"internalType\":\"structIBLSSignatureChecker.NonSignerStakesAndSignature\",\"components\":[{\"name\":\"nonSignerQuorumBitmapIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"nonSignerPubkeys\",\"type\":\"tuple[]\",\"internalType\":\"structBN254.G1Point[]\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"quorumApks\",\"type\":\"tuple[]\",\"internalType\":\"structBN254.G1Point[]\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apkG2\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"sigma\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"quorumApkIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"totalStakeIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"nonSignerStakeIndices\",\"type\":\"uint32[][]\",\"internalType\":\"uint32[][]\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disablePoA\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"enablePoA\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getOperatorRestakedStrategies\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRestakeableStrategies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"_pauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"_initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_stateConfirmer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_poaManager\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_committeeManager\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_poaEnabled\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isOperatorWhitelisted\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isPoAEnabled\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"poaEnabled\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"poaManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"quorumIdToCommitteeId\",\"inputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registryCoordinator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIRegistryCoordinator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeCommittee\",\"inputs\":[{\"name\":\"committeeId\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTEEQuorum\",\"inputs\":[{\"name\":\"quorumNumber\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCommitteeManager\",\"inputs\":[{\"name\":\"_committeeManager\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPoAManager\",\"inputs\":[{\"name\":\"_poaManager\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStaleStakesForbidden\",\"inputs\":[{\"name\":\"value\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStateConfirmer\",\"inputs\":[{\"name\":\"_stateConfirmer\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakeRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStakeRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"staleStakesForbidden\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stateConfirmer\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"taskId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"taskIdToMetadataHash\",\"inputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"teeQuorums\",\"inputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"teeType\",\"type\":\"uint8\",\"internalType\":\"enumIMultiProverServiceManager.TEE\"},{\"name\":\"quorumNumber\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"trySignatureAndApkVerification\",\"inputs\":[{\"name\":\"msgHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apkG2\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"sigma\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"pairingSuccessful\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"siganatureIsValid\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"_metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateCommittee\",\"inputs\":[{\"name\":\"committee\",\"type\":\"tuple\",\"internalType\":\"structIMultiProverServiceManager.Committee\",\"components\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"description\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"metadata\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"teeQuorumNumbers\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"whitelistOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"CommitteeManagerUpdated\",\"inputs\":[{\"name\":\"previousCommitteeManager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"currentCommitteeManager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PoAManagerUpdated\",\"inputs\":[{\"name\":\"previousPoaManager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"currentPoaManager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StaleStakesForbiddenUpdate\",\"inputs\":[{\"name\":\"value\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StateConfirmed\",\"inputs\":[{\"name\":\"committeeId\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"metadata\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"state\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StateConfirmerUpdated\",\"inputs\":[{\"name\":\"previousConfirmer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"currentConfirmer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CommitteeExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CommitteeNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidQuorum\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidQuorumParam\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSender\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoPermission\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"QuorumNotInitialized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TEEQuorumExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TEEQuorumNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TEEQuorumUsed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddr\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroId\",\"inputs\":[]}]",
 }
 
 // MultiProverServiceManagerABI is the input ABI used to generate the binding from.
@@ -233,6 +247,37 @@ func (_MultiProverServiceManager *MultiProverServiceManagerTransactorRaw) Transf
 // Transact invokes the (paid) contract method with params as input values.
 func (_MultiProverServiceManager *MultiProverServiceManagerTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _MultiProverServiceManager.Contract.contract.Transact(opts, method, params...)
+}
+
+// PAUSEDOPERTORREGISTRATION is a free data retrieval call binding the contract method 0xe9f7903f.
+//
+// Solidity: function PAUSED_OPERTOR_REGISTRATION() view returns(uint8)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) PAUSEDOPERTORREGISTRATION(opts *bind.CallOpts) (uint8, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "PAUSED_OPERTOR_REGISTRATION")
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// PAUSEDOPERTORREGISTRATION is a free data retrieval call binding the contract method 0xe9f7903f.
+//
+// Solidity: function PAUSED_OPERTOR_REGISTRATION() view returns(uint8)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) PAUSEDOPERTORREGISTRATION() (uint8, error) {
+	return _MultiProverServiceManager.Contract.PAUSEDOPERTORREGISTRATION(&_MultiProverServiceManager.CallOpts)
+}
+
+// PAUSEDOPERTORREGISTRATION is a free data retrieval call binding the contract method 0xe9f7903f.
+//
+// Solidity: function PAUSED_OPERTOR_REGISTRATION() view returns(uint8)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) PAUSEDOPERTORREGISTRATION() (uint8, error) {
+	return _MultiProverServiceManager.Contract.PAUSEDOPERTORREGISTRATION(&_MultiProverServiceManager.CallOpts)
 }
 
 // PAUSEDSUBMITSTATE is a free data retrieval call binding the contract method 0x8a99056c.
@@ -422,6 +467,92 @@ func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) CheckS
 	return _MultiProverServiceManager.Contract.CheckSignatures(&_MultiProverServiceManager.CallOpts, msgHash, quorumNumbers, referenceBlockNumber, params)
 }
 
+// CommitteeManager is a free data retrieval call binding the contract method 0x7e8611e2.
+//
+// Solidity: function committeeManager() view returns(address)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) CommitteeManager(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "committeeManager")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// CommitteeManager is a free data retrieval call binding the contract method 0x7e8611e2.
+//
+// Solidity: function committeeManager() view returns(address)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) CommitteeManager() (common.Address, error) {
+	return _MultiProverServiceManager.Contract.CommitteeManager(&_MultiProverServiceManager.CallOpts)
+}
+
+// CommitteeManager is a free data retrieval call binding the contract method 0x7e8611e2.
+//
+// Solidity: function committeeManager() view returns(address)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) CommitteeManager() (common.Address, error) {
+	return _MultiProverServiceManager.Contract.CommitteeManager(&_MultiProverServiceManager.CallOpts)
+}
+
+// Committees is a free data retrieval call binding the contract method 0xf5e820fd.
+//
+// Solidity: function committees(uint256 ) view returns(uint256 id, string description, bytes metadata, bytes teeQuorumNumbers)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) Committees(opts *bind.CallOpts, arg0 *big.Int) (struct {
+	Id               *big.Int
+	Description      string
+	Metadata         []byte
+	TeeQuorumNumbers []byte
+}, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "committees", arg0)
+
+	outstruct := new(struct {
+		Id               *big.Int
+		Description      string
+		Metadata         []byte
+		TeeQuorumNumbers []byte
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Id = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.Description = *abi.ConvertType(out[1], new(string)).(*string)
+	outstruct.Metadata = *abi.ConvertType(out[2], new([]byte)).(*[]byte)
+	outstruct.TeeQuorumNumbers = *abi.ConvertType(out[3], new([]byte)).(*[]byte)
+
+	return *outstruct, err
+
+}
+
+// Committees is a free data retrieval call binding the contract method 0xf5e820fd.
+//
+// Solidity: function committees(uint256 ) view returns(uint256 id, string description, bytes metadata, bytes teeQuorumNumbers)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) Committees(arg0 *big.Int) (struct {
+	Id               *big.Int
+	Description      string
+	Metadata         []byte
+	TeeQuorumNumbers []byte
+}, error) {
+	return _MultiProverServiceManager.Contract.Committees(&_MultiProverServiceManager.CallOpts, arg0)
+}
+
+// Committees is a free data retrieval call binding the contract method 0xf5e820fd.
+//
+// Solidity: function committees(uint256 ) view returns(uint256 id, string description, bytes metadata, bytes teeQuorumNumbers)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) Committees(arg0 *big.Int) (struct {
+	Id               *big.Int
+	Description      string
+	Metadata         []byte
+	TeeQuorumNumbers []byte
+}, error) {
+	return _MultiProverServiceManager.Contract.Committees(&_MultiProverServiceManager.CallOpts, arg0)
+}
+
 // Delegation is a free data retrieval call binding the contract method 0xdf5cf723.
 //
 // Solidity: function delegation() view returns(address)
@@ -513,6 +644,68 @@ func (_MultiProverServiceManager *MultiProverServiceManagerSession) GetRestakeab
 // Solidity: function getRestakeableStrategies() view returns(address[])
 func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) GetRestakeableStrategies() ([]common.Address, error) {
 	return _MultiProverServiceManager.Contract.GetRestakeableStrategies(&_MultiProverServiceManager.CallOpts)
+}
+
+// IsOperatorWhitelisted is a free data retrieval call binding the contract method 0x2e8da829.
+//
+// Solidity: function isOperatorWhitelisted(address operator) view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) IsOperatorWhitelisted(opts *bind.CallOpts, operator common.Address) (bool, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "isOperatorWhitelisted", operator)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorWhitelisted is a free data retrieval call binding the contract method 0x2e8da829.
+//
+// Solidity: function isOperatorWhitelisted(address operator) view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) IsOperatorWhitelisted(operator common.Address) (bool, error) {
+	return _MultiProverServiceManager.Contract.IsOperatorWhitelisted(&_MultiProverServiceManager.CallOpts, operator)
+}
+
+// IsOperatorWhitelisted is a free data retrieval call binding the contract method 0x2e8da829.
+//
+// Solidity: function isOperatorWhitelisted(address operator) view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) IsOperatorWhitelisted(operator common.Address) (bool, error) {
+	return _MultiProverServiceManager.Contract.IsOperatorWhitelisted(&_MultiProverServiceManager.CallOpts, operator)
+}
+
+// IsPoAEnabled is a free data retrieval call binding the contract method 0x64330892.
+//
+// Solidity: function isPoAEnabled() view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) IsPoAEnabled(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "isPoAEnabled")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsPoAEnabled is a free data retrieval call binding the contract method 0x64330892.
+//
+// Solidity: function isPoAEnabled() view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) IsPoAEnabled() (bool, error) {
+	return _MultiProverServiceManager.Contract.IsPoAEnabled(&_MultiProverServiceManager.CallOpts)
+}
+
+// IsPoAEnabled is a free data retrieval call binding the contract method 0x64330892.
+//
+// Solidity: function isPoAEnabled() view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) IsPoAEnabled() (bool, error) {
+	return _MultiProverServiceManager.Contract.IsPoAEnabled(&_MultiProverServiceManager.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -637,6 +830,99 @@ func (_MultiProverServiceManager *MultiProverServiceManagerSession) PauserRegist
 // Solidity: function pauserRegistry() view returns(address)
 func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) PauserRegistry() (common.Address, error) {
 	return _MultiProverServiceManager.Contract.PauserRegistry(&_MultiProverServiceManager.CallOpts)
+}
+
+// PoaEnabled is a free data retrieval call binding the contract method 0xf7c089f1.
+//
+// Solidity: function poaEnabled() view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) PoaEnabled(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "poaEnabled")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// PoaEnabled is a free data retrieval call binding the contract method 0xf7c089f1.
+//
+// Solidity: function poaEnabled() view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) PoaEnabled() (bool, error) {
+	return _MultiProverServiceManager.Contract.PoaEnabled(&_MultiProverServiceManager.CallOpts)
+}
+
+// PoaEnabled is a free data retrieval call binding the contract method 0xf7c089f1.
+//
+// Solidity: function poaEnabled() view returns(bool)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) PoaEnabled() (bool, error) {
+	return _MultiProverServiceManager.Contract.PoaEnabled(&_MultiProverServiceManager.CallOpts)
+}
+
+// PoaManager is a free data retrieval call binding the contract method 0x4fbc0f9a.
+//
+// Solidity: function poaManager() view returns(address)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) PoaManager(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "poaManager")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// PoaManager is a free data retrieval call binding the contract method 0x4fbc0f9a.
+//
+// Solidity: function poaManager() view returns(address)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) PoaManager() (common.Address, error) {
+	return _MultiProverServiceManager.Contract.PoaManager(&_MultiProverServiceManager.CallOpts)
+}
+
+// PoaManager is a free data retrieval call binding the contract method 0x4fbc0f9a.
+//
+// Solidity: function poaManager() view returns(address)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) PoaManager() (common.Address, error) {
+	return _MultiProverServiceManager.Contract.PoaManager(&_MultiProverServiceManager.CallOpts)
+}
+
+// QuorumIdToCommitteeId is a free data retrieval call binding the contract method 0xcb6b33b5.
+//
+// Solidity: function quorumIdToCommitteeId(uint8 ) view returns(uint256)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) QuorumIdToCommitteeId(opts *bind.CallOpts, arg0 uint8) (*big.Int, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "quorumIdToCommitteeId", arg0)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// QuorumIdToCommitteeId is a free data retrieval call binding the contract method 0xcb6b33b5.
+//
+// Solidity: function quorumIdToCommitteeId(uint8 ) view returns(uint256)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) QuorumIdToCommitteeId(arg0 uint8) (*big.Int, error) {
+	return _MultiProverServiceManager.Contract.QuorumIdToCommitteeId(&_MultiProverServiceManager.CallOpts, arg0)
+}
+
+// QuorumIdToCommitteeId is a free data retrieval call binding the contract method 0xcb6b33b5.
+//
+// Solidity: function quorumIdToCommitteeId(uint8 ) view returns(uint256)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) QuorumIdToCommitteeId(arg0 uint8) (*big.Int, error) {
+	return _MultiProverServiceManager.Contract.QuorumIdToCommitteeId(&_MultiProverServiceManager.CallOpts, arg0)
 }
 
 // RegistryCoordinator is a free data retrieval call binding the contract method 0x6d14a987.
@@ -825,6 +1111,51 @@ func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) TaskId
 	return _MultiProverServiceManager.Contract.TaskIdToMetadataHash(&_MultiProverServiceManager.CallOpts, arg0)
 }
 
+// TeeQuorums is a free data retrieval call binding the contract method 0x4b8606e2.
+//
+// Solidity: function teeQuorums(uint8 ) view returns(uint8 teeType, uint8 quorumNumber)
+func (_MultiProverServiceManager *MultiProverServiceManagerCaller) TeeQuorums(opts *bind.CallOpts, arg0 uint8) (struct {
+	TeeType      uint8
+	QuorumNumber uint8
+}, error) {
+	var out []interface{}
+	err := _MultiProverServiceManager.contract.Call(opts, &out, "teeQuorums", arg0)
+
+	outstruct := new(struct {
+		TeeType      uint8
+		QuorumNumber uint8
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.TeeType = *abi.ConvertType(out[0], new(uint8)).(*uint8)
+	outstruct.QuorumNumber = *abi.ConvertType(out[1], new(uint8)).(*uint8)
+
+	return *outstruct, err
+
+}
+
+// TeeQuorums is a free data retrieval call binding the contract method 0x4b8606e2.
+//
+// Solidity: function teeQuorums(uint8 ) view returns(uint8 teeType, uint8 quorumNumber)
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) TeeQuorums(arg0 uint8) (struct {
+	TeeType      uint8
+	QuorumNumber uint8
+}, error) {
+	return _MultiProverServiceManager.Contract.TeeQuorums(&_MultiProverServiceManager.CallOpts, arg0)
+}
+
+// TeeQuorums is a free data retrieval call binding the contract method 0x4b8606e2.
+//
+// Solidity: function teeQuorums(uint8 ) view returns(uint8 teeType, uint8 quorumNumber)
+func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) TeeQuorums(arg0 uint8) (struct {
+	TeeType      uint8
+	QuorumNumber uint8
+}, error) {
+	return _MultiProverServiceManager.Contract.TeeQuorums(&_MultiProverServiceManager.CallOpts, arg0)
+}
+
 // TrySignatureAndApkVerification is a free data retrieval call binding the contract method 0x171f1d5b.
 //
 // Solidity: function trySignatureAndApkVerification(bytes32 msgHash, (uint256,uint256) apk, (uint256[2],uint256[2]) apkG2, (uint256,uint256) sigma) view returns(bool pairingSuccessful, bool siganatureIsValid)
@@ -870,6 +1201,69 @@ func (_MultiProverServiceManager *MultiProverServiceManagerCallerSession) TrySig
 	return _MultiProverServiceManager.Contract.TrySignatureAndApkVerification(&_MultiProverServiceManager.CallOpts, msgHash, apk, apkG2, sigma)
 }
 
+// AddCommittee is a paid mutator transaction binding the contract method 0x5fd6c531.
+//
+// Solidity: function addCommittee((uint256,string,bytes,bytes) committee) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) AddCommittee(opts *bind.TransactOpts, committee IMultiProverServiceManagerCommittee) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "addCommittee", committee)
+}
+
+// AddCommittee is a paid mutator transaction binding the contract method 0x5fd6c531.
+//
+// Solidity: function addCommittee((uint256,string,bytes,bytes) committee) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) AddCommittee(committee IMultiProverServiceManagerCommittee) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.AddCommittee(&_MultiProverServiceManager.TransactOpts, committee)
+}
+
+// AddCommittee is a paid mutator transaction binding the contract method 0x5fd6c531.
+//
+// Solidity: function addCommittee((uint256,string,bytes,bytes) committee) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) AddCommittee(committee IMultiProverServiceManagerCommittee) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.AddCommittee(&_MultiProverServiceManager.TransactOpts, committee)
+}
+
+// AddTEEQuorum is a paid mutator transaction binding the contract method 0xbce475dc.
+//
+// Solidity: function addTEEQuorum((uint8,uint8) teeQuorum) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) AddTEEQuorum(opts *bind.TransactOpts, teeQuorum IMultiProverServiceManagerTEEQuorum) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "addTEEQuorum", teeQuorum)
+}
+
+// AddTEEQuorum is a paid mutator transaction binding the contract method 0xbce475dc.
+//
+// Solidity: function addTEEQuorum((uint8,uint8) teeQuorum) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) AddTEEQuorum(teeQuorum IMultiProverServiceManagerTEEQuorum) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.AddTEEQuorum(&_MultiProverServiceManager.TransactOpts, teeQuorum)
+}
+
+// AddTEEQuorum is a paid mutator transaction binding the contract method 0xbce475dc.
+//
+// Solidity: function addTEEQuorum((uint8,uint8) teeQuorum) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) AddTEEQuorum(teeQuorum IMultiProverServiceManagerTEEQuorum) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.AddTEEQuorum(&_MultiProverServiceManager.TransactOpts, teeQuorum)
+}
+
+// BlacklistOperator is a paid mutator transaction binding the contract method 0xb4492ecc.
+//
+// Solidity: function blacklistOperator(address operator) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) BlacklistOperator(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "blacklistOperator", operator)
+}
+
+// BlacklistOperator is a paid mutator transaction binding the contract method 0xb4492ecc.
+//
+// Solidity: function blacklistOperator(address operator) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) BlacklistOperator(operator common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.BlacklistOperator(&_MultiProverServiceManager.TransactOpts, operator)
+}
+
+// BlacklistOperator is a paid mutator transaction binding the contract method 0xb4492ecc.
+//
+// Solidity: function blacklistOperator(address operator) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) BlacklistOperator(operator common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.BlacklistOperator(&_MultiProverServiceManager.TransactOpts, operator)
+}
+
 // ConfirmState is a paid mutator transaction binding the contract method 0x19718835.
 //
 // Solidity: function confirmState((uint256,bytes,bytes,bytes,bytes,uint32) stateHeader, (uint32[],(uint256,uint256)[],(uint256,uint256)[],(uint256[2],uint256[2]),(uint256,uint256),uint32[],uint32[],uint32[][]) nonSignerStakesAndSignature) returns()
@@ -912,25 +1306,67 @@ func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) De
 	return _MultiProverServiceManager.Contract.DeregisterOperatorFromAVS(&_MultiProverServiceManager.TransactOpts, operator)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x358394d8.
+// DisablePoA is a paid mutator transaction binding the contract method 0x05db3698.
 //
-// Solidity: function initialize(address _pauserRegistry, uint256 _initialPausedStatus, address _initialOwner, address _stateConfirmer) returns()
-func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) Initialize(opts *bind.TransactOpts, _pauserRegistry common.Address, _initialPausedStatus *big.Int, _initialOwner common.Address, _stateConfirmer common.Address) (*types.Transaction, error) {
-	return _MultiProverServiceManager.contract.Transact(opts, "initialize", _pauserRegistry, _initialPausedStatus, _initialOwner, _stateConfirmer)
+// Solidity: function disablePoA() returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) DisablePoA(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "disablePoA")
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x358394d8.
+// DisablePoA is a paid mutator transaction binding the contract method 0x05db3698.
 //
-// Solidity: function initialize(address _pauserRegistry, uint256 _initialPausedStatus, address _initialOwner, address _stateConfirmer) returns()
-func (_MultiProverServiceManager *MultiProverServiceManagerSession) Initialize(_pauserRegistry common.Address, _initialPausedStatus *big.Int, _initialOwner common.Address, _stateConfirmer common.Address) (*types.Transaction, error) {
-	return _MultiProverServiceManager.Contract.Initialize(&_MultiProverServiceManager.TransactOpts, _pauserRegistry, _initialPausedStatus, _initialOwner, _stateConfirmer)
+// Solidity: function disablePoA() returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) DisablePoA() (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.DisablePoA(&_MultiProverServiceManager.TransactOpts)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x358394d8.
+// DisablePoA is a paid mutator transaction binding the contract method 0x05db3698.
 //
-// Solidity: function initialize(address _pauserRegistry, uint256 _initialPausedStatus, address _initialOwner, address _stateConfirmer) returns()
-func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) Initialize(_pauserRegistry common.Address, _initialPausedStatus *big.Int, _initialOwner common.Address, _stateConfirmer common.Address) (*types.Transaction, error) {
-	return _MultiProverServiceManager.Contract.Initialize(&_MultiProverServiceManager.TransactOpts, _pauserRegistry, _initialPausedStatus, _initialOwner, _stateConfirmer)
+// Solidity: function disablePoA() returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) DisablePoA() (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.DisablePoA(&_MultiProverServiceManager.TransactOpts)
+}
+
+// EnablePoA is a paid mutator transaction binding the contract method 0x12f8b905.
+//
+// Solidity: function enablePoA() returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) EnablePoA(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "enablePoA")
+}
+
+// EnablePoA is a paid mutator transaction binding the contract method 0x12f8b905.
+//
+// Solidity: function enablePoA() returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) EnablePoA() (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.EnablePoA(&_MultiProverServiceManager.TransactOpts)
+}
+
+// EnablePoA is a paid mutator transaction binding the contract method 0x12f8b905.
+//
+// Solidity: function enablePoA() returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) EnablePoA() (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.EnablePoA(&_MultiProverServiceManager.TransactOpts)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0x7ac525a9.
+//
+// Solidity: function initialize(address _pauserRegistry, uint256 _initialPausedStatus, address _initialOwner, address _stateConfirmer, address _poaManager, address _committeeManager, bool _poaEnabled) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) Initialize(opts *bind.TransactOpts, _pauserRegistry common.Address, _initialPausedStatus *big.Int, _initialOwner common.Address, _stateConfirmer common.Address, _poaManager common.Address, _committeeManager common.Address, _poaEnabled bool) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "initialize", _pauserRegistry, _initialPausedStatus, _initialOwner, _stateConfirmer, _poaManager, _committeeManager, _poaEnabled)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0x7ac525a9.
+//
+// Solidity: function initialize(address _pauserRegistry, uint256 _initialPausedStatus, address _initialOwner, address _stateConfirmer, address _poaManager, address _committeeManager, bool _poaEnabled) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) Initialize(_pauserRegistry common.Address, _initialPausedStatus *big.Int, _initialOwner common.Address, _stateConfirmer common.Address, _poaManager common.Address, _committeeManager common.Address, _poaEnabled bool) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.Initialize(&_MultiProverServiceManager.TransactOpts, _pauserRegistry, _initialPausedStatus, _initialOwner, _stateConfirmer, _poaManager, _committeeManager, _poaEnabled)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0x7ac525a9.
+//
+// Solidity: function initialize(address _pauserRegistry, uint256 _initialPausedStatus, address _initialOwner, address _stateConfirmer, address _poaManager, address _committeeManager, bool _poaEnabled) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) Initialize(_pauserRegistry common.Address, _initialPausedStatus *big.Int, _initialOwner common.Address, _stateConfirmer common.Address, _poaManager common.Address, _committeeManager common.Address, _poaEnabled bool) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.Initialize(&_MultiProverServiceManager.TransactOpts, _pauserRegistry, _initialPausedStatus, _initialOwner, _stateConfirmer, _poaManager, _committeeManager, _poaEnabled)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x136439dd.
@@ -996,6 +1432,48 @@ func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) Re
 	return _MultiProverServiceManager.Contract.RegisterOperatorToAVS(&_MultiProverServiceManager.TransactOpts, operator, operatorSignature)
 }
 
+// RemoveCommittee is a paid mutator transaction binding the contract method 0x38628003.
+//
+// Solidity: function removeCommittee(uint256 committeeId) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) RemoveCommittee(opts *bind.TransactOpts, committeeId *big.Int) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "removeCommittee", committeeId)
+}
+
+// RemoveCommittee is a paid mutator transaction binding the contract method 0x38628003.
+//
+// Solidity: function removeCommittee(uint256 committeeId) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) RemoveCommittee(committeeId *big.Int) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.RemoveCommittee(&_MultiProverServiceManager.TransactOpts, committeeId)
+}
+
+// RemoveCommittee is a paid mutator transaction binding the contract method 0x38628003.
+//
+// Solidity: function removeCommittee(uint256 committeeId) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) RemoveCommittee(committeeId *big.Int) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.RemoveCommittee(&_MultiProverServiceManager.TransactOpts, committeeId)
+}
+
+// RemoveTEEQuorum is a paid mutator transaction binding the contract method 0x7135aad4.
+//
+// Solidity: function removeTEEQuorum(uint8 quorumNumber) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) RemoveTEEQuorum(opts *bind.TransactOpts, quorumNumber uint8) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "removeTEEQuorum", quorumNumber)
+}
+
+// RemoveTEEQuorum is a paid mutator transaction binding the contract method 0x7135aad4.
+//
+// Solidity: function removeTEEQuorum(uint8 quorumNumber) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) RemoveTEEQuorum(quorumNumber uint8) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.RemoveTEEQuorum(&_MultiProverServiceManager.TransactOpts, quorumNumber)
+}
+
+// RemoveTEEQuorum is a paid mutator transaction binding the contract method 0x7135aad4.
+//
+// Solidity: function removeTEEQuorum(uint8 quorumNumber) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) RemoveTEEQuorum(quorumNumber uint8) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.RemoveTEEQuorum(&_MultiProverServiceManager.TransactOpts, quorumNumber)
+}
+
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
@@ -1017,6 +1495,27 @@ func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) Re
 	return _MultiProverServiceManager.Contract.RenounceOwnership(&_MultiProverServiceManager.TransactOpts)
 }
 
+// SetCommitteeManager is a paid mutator transaction binding the contract method 0x1f8d48d3.
+//
+// Solidity: function setCommitteeManager(address _committeeManager) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) SetCommitteeManager(opts *bind.TransactOpts, _committeeManager common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "setCommitteeManager", _committeeManager)
+}
+
+// SetCommitteeManager is a paid mutator transaction binding the contract method 0x1f8d48d3.
+//
+// Solidity: function setCommitteeManager(address _committeeManager) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) SetCommitteeManager(_committeeManager common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.SetCommitteeManager(&_MultiProverServiceManager.TransactOpts, _committeeManager)
+}
+
+// SetCommitteeManager is a paid mutator transaction binding the contract method 0x1f8d48d3.
+//
+// Solidity: function setCommitteeManager(address _committeeManager) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) SetCommitteeManager(_committeeManager common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.SetCommitteeManager(&_MultiProverServiceManager.TransactOpts, _committeeManager)
+}
+
 // SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
 //
 // Solidity: function setPauserRegistry(address newPauserRegistry) returns()
@@ -1036,6 +1535,27 @@ func (_MultiProverServiceManager *MultiProverServiceManagerSession) SetPauserReg
 // Solidity: function setPauserRegistry(address newPauserRegistry) returns()
 func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
 	return _MultiProverServiceManager.Contract.SetPauserRegistry(&_MultiProverServiceManager.TransactOpts, newPauserRegistry)
+}
+
+// SetPoAManager is a paid mutator transaction binding the contract method 0x9d71ad88.
+//
+// Solidity: function setPoAManager(address _poaManager) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) SetPoAManager(opts *bind.TransactOpts, _poaManager common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "setPoAManager", _poaManager)
+}
+
+// SetPoAManager is a paid mutator transaction binding the contract method 0x9d71ad88.
+//
+// Solidity: function setPoAManager(address _poaManager) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) SetPoAManager(_poaManager common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.SetPoAManager(&_MultiProverServiceManager.TransactOpts, _poaManager)
+}
+
+// SetPoAManager is a paid mutator transaction binding the contract method 0x9d71ad88.
+//
+// Solidity: function setPoAManager(address _poaManager) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) SetPoAManager(_poaManager common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.SetPoAManager(&_MultiProverServiceManager.TransactOpts, _poaManager)
 }
 
 // SetStaleStakesForbidden is a paid mutator transaction binding the contract method 0x416c7e5e.
@@ -1141,6 +1661,183 @@ func (_MultiProverServiceManager *MultiProverServiceManagerSession) UpdateAVSMet
 // Solidity: function updateAVSMetadataURI(string _metadataURI) returns()
 func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) UpdateAVSMetadataURI(_metadataURI string) (*types.Transaction, error) {
 	return _MultiProverServiceManager.Contract.UpdateAVSMetadataURI(&_MultiProverServiceManager.TransactOpts, _metadataURI)
+}
+
+// UpdateCommittee is a paid mutator transaction binding the contract method 0xb36487b9.
+//
+// Solidity: function updateCommittee((uint256,string,bytes,bytes) committee) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) UpdateCommittee(opts *bind.TransactOpts, committee IMultiProverServiceManagerCommittee) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "updateCommittee", committee)
+}
+
+// UpdateCommittee is a paid mutator transaction binding the contract method 0xb36487b9.
+//
+// Solidity: function updateCommittee((uint256,string,bytes,bytes) committee) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) UpdateCommittee(committee IMultiProverServiceManagerCommittee) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.UpdateCommittee(&_MultiProverServiceManager.TransactOpts, committee)
+}
+
+// UpdateCommittee is a paid mutator transaction binding the contract method 0xb36487b9.
+//
+// Solidity: function updateCommittee((uint256,string,bytes,bytes) committee) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) UpdateCommittee(committee IMultiProverServiceManagerCommittee) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.UpdateCommittee(&_MultiProverServiceManager.TransactOpts, committee)
+}
+
+// WhitelistOperator is a paid mutator transaction binding the contract method 0x2a2b0bcd.
+//
+// Solidity: function whitelistOperator(address operator) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactor) WhitelistOperator(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.contract.Transact(opts, "whitelistOperator", operator)
+}
+
+// WhitelistOperator is a paid mutator transaction binding the contract method 0x2a2b0bcd.
+//
+// Solidity: function whitelistOperator(address operator) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerSession) WhitelistOperator(operator common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.WhitelistOperator(&_MultiProverServiceManager.TransactOpts, operator)
+}
+
+// WhitelistOperator is a paid mutator transaction binding the contract method 0x2a2b0bcd.
+//
+// Solidity: function whitelistOperator(address operator) returns()
+func (_MultiProverServiceManager *MultiProverServiceManagerTransactorSession) WhitelistOperator(operator common.Address) (*types.Transaction, error) {
+	return _MultiProverServiceManager.Contract.WhitelistOperator(&_MultiProverServiceManager.TransactOpts, operator)
+}
+
+// MultiProverServiceManagerCommitteeManagerUpdatedIterator is returned from FilterCommitteeManagerUpdated and is used to iterate over the raw logs and unpacked data for CommitteeManagerUpdated events raised by the MultiProverServiceManager contract.
+type MultiProverServiceManagerCommitteeManagerUpdatedIterator struct {
+	Event *MultiProverServiceManagerCommitteeManagerUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MultiProverServiceManagerCommitteeManagerUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MultiProverServiceManagerCommitteeManagerUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MultiProverServiceManagerCommitteeManagerUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MultiProverServiceManagerCommitteeManagerUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MultiProverServiceManagerCommitteeManagerUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MultiProverServiceManagerCommitteeManagerUpdated represents a CommitteeManagerUpdated event raised by the MultiProverServiceManager contract.
+type MultiProverServiceManagerCommitteeManagerUpdated struct {
+	PreviousCommitteeManager common.Address
+	CurrentCommitteeManager  common.Address
+	Raw                      types.Log // Blockchain specific contextual infos
+}
+
+// FilterCommitteeManagerUpdated is a free log retrieval operation binding the contract event 0xb0bb5f603e798b07a529de2cb13eee1f02b35628fe487e1b3cd99adf48e9a0b0.
+//
+// Solidity: event CommitteeManagerUpdated(address previousCommitteeManager, address currentCommitteeManager)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) FilterCommitteeManagerUpdated(opts *bind.FilterOpts) (*MultiProverServiceManagerCommitteeManagerUpdatedIterator, error) {
+
+	logs, sub, err := _MultiProverServiceManager.contract.FilterLogs(opts, "CommitteeManagerUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &MultiProverServiceManagerCommitteeManagerUpdatedIterator{contract: _MultiProverServiceManager.contract, event: "CommitteeManagerUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchCommitteeManagerUpdated is a free log subscription operation binding the contract event 0xb0bb5f603e798b07a529de2cb13eee1f02b35628fe487e1b3cd99adf48e9a0b0.
+//
+// Solidity: event CommitteeManagerUpdated(address previousCommitteeManager, address currentCommitteeManager)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) WatchCommitteeManagerUpdated(opts *bind.WatchOpts, sink chan<- *MultiProverServiceManagerCommitteeManagerUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _MultiProverServiceManager.contract.WatchLogs(opts, "CommitteeManagerUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MultiProverServiceManagerCommitteeManagerUpdated)
+				if err := _MultiProverServiceManager.contract.UnpackLog(event, "CommitteeManagerUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseCommitteeManagerUpdated is a log parse operation binding the contract event 0xb0bb5f603e798b07a529de2cb13eee1f02b35628fe487e1b3cd99adf48e9a0b0.
+//
+// Solidity: event CommitteeManagerUpdated(address previousCommitteeManager, address currentCommitteeManager)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) ParseCommitteeManagerUpdated(log types.Log) (*MultiProverServiceManagerCommitteeManagerUpdated, error) {
+	event := new(MultiProverServiceManagerCommitteeManagerUpdated)
+	if err := _MultiProverServiceManager.contract.UnpackLog(event, "CommitteeManagerUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // MultiProverServiceManagerInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the MultiProverServiceManager contract.
@@ -1710,6 +2407,141 @@ func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) ParsePauser
 	return event, nil
 }
 
+// MultiProverServiceManagerPoAManagerUpdatedIterator is returned from FilterPoAManagerUpdated and is used to iterate over the raw logs and unpacked data for PoAManagerUpdated events raised by the MultiProverServiceManager contract.
+type MultiProverServiceManagerPoAManagerUpdatedIterator struct {
+	Event *MultiProverServiceManagerPoAManagerUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MultiProverServiceManagerPoAManagerUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MultiProverServiceManagerPoAManagerUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MultiProverServiceManagerPoAManagerUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MultiProverServiceManagerPoAManagerUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MultiProverServiceManagerPoAManagerUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MultiProverServiceManagerPoAManagerUpdated represents a PoAManagerUpdated event raised by the MultiProverServiceManager contract.
+type MultiProverServiceManagerPoAManagerUpdated struct {
+	PreviousPoaManager common.Address
+	CurrentPoaManager  common.Address
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterPoAManagerUpdated is a free log retrieval operation binding the contract event 0x24a5170be7563b6bf7dd80d648dd7f8971f3836fc77d85c9ce0923ee7365e31c.
+//
+// Solidity: event PoAManagerUpdated(address previousPoaManager, address currentPoaManager)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) FilterPoAManagerUpdated(opts *bind.FilterOpts) (*MultiProverServiceManagerPoAManagerUpdatedIterator, error) {
+
+	logs, sub, err := _MultiProverServiceManager.contract.FilterLogs(opts, "PoAManagerUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &MultiProverServiceManagerPoAManagerUpdatedIterator{contract: _MultiProverServiceManager.contract, event: "PoAManagerUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchPoAManagerUpdated is a free log subscription operation binding the contract event 0x24a5170be7563b6bf7dd80d648dd7f8971f3836fc77d85c9ce0923ee7365e31c.
+//
+// Solidity: event PoAManagerUpdated(address previousPoaManager, address currentPoaManager)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) WatchPoAManagerUpdated(opts *bind.WatchOpts, sink chan<- *MultiProverServiceManagerPoAManagerUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _MultiProverServiceManager.contract.WatchLogs(opts, "PoAManagerUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MultiProverServiceManagerPoAManagerUpdated)
+				if err := _MultiProverServiceManager.contract.UnpackLog(event, "PoAManagerUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParsePoAManagerUpdated is a log parse operation binding the contract event 0x24a5170be7563b6bf7dd80d648dd7f8971f3836fc77d85c9ce0923ee7365e31c.
+//
+// Solidity: event PoAManagerUpdated(address previousPoaManager, address currentPoaManager)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) ParsePoAManagerUpdated(log types.Log) (*MultiProverServiceManagerPoAManagerUpdated, error) {
+	event := new(MultiProverServiceManagerPoAManagerUpdated)
+	if err := _MultiProverServiceManager.contract.UnpackLog(event, "PoAManagerUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // MultiProverServiceManagerStaleStakesForbiddenUpdateIterator is returned from FilterStaleStakesForbiddenUpdate and is used to iterate over the raw logs and unpacked data for StaleStakesForbiddenUpdate events raised by the MultiProverServiceManager contract.
 type MultiProverServiceManagerStaleStakesForbiddenUpdateIterator struct {
 	Event *MultiProverServiceManagerStaleStakesForbiddenUpdate // Event containing the contract specifics and raw log
@@ -1913,23 +2745,23 @@ func (it *MultiProverServiceManagerStateConfirmedIterator) Close() error {
 
 // MultiProverServiceManagerStateConfirmed represents a StateConfirmed event raised by the MultiProverServiceManager contract.
 type MultiProverServiceManagerStateConfirmed struct {
-	Identifier *big.Int
-	Metadata   []byte
-	State      []byte
-	Raw        types.Log // Blockchain specific contextual infos
+	CommitteeId *big.Int
+	Metadata    []byte
+	State       []byte
+	Raw         types.Log // Blockchain specific contextual infos
 }
 
 // FilterStateConfirmed is a free log retrieval operation binding the contract event 0xfa10e7f61e3e060beb2a9dab524d6d58b04c90b1ef9ca10367825cf50870e65d.
 //
-// Solidity: event StateConfirmed(uint256 indexed identifier, bytes metadata, bytes state)
-func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) FilterStateConfirmed(opts *bind.FilterOpts, identifier []*big.Int) (*MultiProverServiceManagerStateConfirmedIterator, error) {
+// Solidity: event StateConfirmed(uint256 indexed committeeId, bytes metadata, bytes state)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) FilterStateConfirmed(opts *bind.FilterOpts, committeeId []*big.Int) (*MultiProverServiceManagerStateConfirmedIterator, error) {
 
-	var identifierRule []interface{}
-	for _, identifierItem := range identifier {
-		identifierRule = append(identifierRule, identifierItem)
+	var committeeIdRule []interface{}
+	for _, committeeIdItem := range committeeId {
+		committeeIdRule = append(committeeIdRule, committeeIdItem)
 	}
 
-	logs, sub, err := _MultiProverServiceManager.contract.FilterLogs(opts, "StateConfirmed", identifierRule)
+	logs, sub, err := _MultiProverServiceManager.contract.FilterLogs(opts, "StateConfirmed", committeeIdRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1938,15 +2770,15 @@ func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) FilterState
 
 // WatchStateConfirmed is a free log subscription operation binding the contract event 0xfa10e7f61e3e060beb2a9dab524d6d58b04c90b1ef9ca10367825cf50870e65d.
 //
-// Solidity: event StateConfirmed(uint256 indexed identifier, bytes metadata, bytes state)
-func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) WatchStateConfirmed(opts *bind.WatchOpts, sink chan<- *MultiProverServiceManagerStateConfirmed, identifier []*big.Int) (event.Subscription, error) {
+// Solidity: event StateConfirmed(uint256 indexed committeeId, bytes metadata, bytes state)
+func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) WatchStateConfirmed(opts *bind.WatchOpts, sink chan<- *MultiProverServiceManagerStateConfirmed, committeeId []*big.Int) (event.Subscription, error) {
 
-	var identifierRule []interface{}
-	for _, identifierItem := range identifier {
-		identifierRule = append(identifierRule, identifierItem)
+	var committeeIdRule []interface{}
+	for _, committeeIdItem := range committeeId {
+		committeeIdRule = append(committeeIdRule, committeeIdItem)
 	}
 
-	logs, sub, err := _MultiProverServiceManager.contract.WatchLogs(opts, "StateConfirmed", identifierRule)
+	logs, sub, err := _MultiProverServiceManager.contract.WatchLogs(opts, "StateConfirmed", committeeIdRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1980,7 +2812,7 @@ func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) WatchStateC
 
 // ParseStateConfirmed is a log parse operation binding the contract event 0xfa10e7f61e3e060beb2a9dab524d6d58b04c90b1ef9ca10367825cf50870e65d.
 //
-// Solidity: event StateConfirmed(uint256 indexed identifier, bytes metadata, bytes state)
+// Solidity: event StateConfirmed(uint256 indexed committeeId, bytes metadata, bytes state)
 func (_MultiProverServiceManager *MultiProverServiceManagerFilterer) ParseStateConfirmed(log types.Log) (*MultiProverServiceManagerStateConfirmed, error) {
 	event := new(MultiProverServiceManagerStateConfirmed)
 	if err := _MultiProverServiceManager.contract.UnpackLog(event, "StateConfirmed", log); err != nil {

@@ -2,36 +2,39 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
-	"os"
+	"fmt"
 
 	"github.com/automata-network/multi-prover-avs/operator"
 	"github.com/chzyer/logex"
 )
 
+var (
+	SemVer    = "0.1.0"
+	GitCommit = "(unknown)"
+	GitDate   = "(unknown)"
+)
+
 type Flag struct {
-	Config string
+	Config  string
+	Version bool
 }
 
 func NewFlag() *Flag {
 	var f Flag
 	flag.StringVar(&f.Config, "c", "config/operator.json", "config file")
+	flag.BoolVar(&f.Version, "v", false, "show version")
 	flag.Parse()
 	return &f
 }
 
 func main() {
 	flag := NewFlag()
-	cfgBytes, err := os.ReadFile(flag.Config)
-	if err != nil {
-		logex.Fatal(err)
+	if flag.Version {
+		fmt.Printf("Version:%v, GitCommit:%v, GitDate:%v\n", SemVer, GitCommit, GitDate)
+		return
 	}
-	cfg := &operator.Config{}
-	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
-		logex.Fatal(err)
-	}
-	o, err := operator.NewOperator(cfg)
+	o, err := operator.NewOperator(flag.Config)
 	if err != nil {
 		logex.Fatal(err)
 	}

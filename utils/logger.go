@@ -11,16 +11,24 @@ import (
 var _ logging.Logger = &Logger{}
 
 type Logger struct {
-	raw *logex.Logger
+	raw  *logex.Logger
+	tags []any
 }
 
 func NewLogger(raw *logex.Logger) *Logger {
 	newRaw := raw.DownLevel(1)
-	return &Logger{&newRaw}
+	return &Logger{&newRaw, nil}
+}
+
+func (l *Logger) With(args ...any) logging.Logger {
+	return &Logger{l.raw, append(l.tags, args...)}
 }
 
 func (l *Logger) toArgs(tags []any) string {
 	var args []string
+	for i := 0; i < len(l.tags); i += 2 {
+		args = append(args, fmt.Sprintf("%v=%v", l.tags[i], l.tags[i+1]))
+	}
 	for i := 0; i < len(tags); i += 2 {
 		args = append(args, fmt.Sprintf("%v=%v", tags[i], tags[i+1]))
 	}

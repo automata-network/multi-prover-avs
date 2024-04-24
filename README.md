@@ -152,55 +152,16 @@ Please visit the [Operator setup](https://github.com/automata-network/multiprove
 
 The Multi-Prover AVS will launch on mainnet soon, please be patient!
 
-## Quick Start
+## Compile From Source
 
-Steps for running the multi-prover-avs in simulation node(without the SGX prover):
+### Operator
 
-1. Start a execution node
 ```
-> anvil --fork-url ${holesky_rpc_endpoint} --fork-block-number 1218851
-```
-
-2. Prepare the environment
-```
-> cp .env.example .env
-> # vim .env
+go build -o out/operator ./cmd/operator
 ```
 
-3. Deploy the avs contracts
-```
-> ./script/deploy.sh init_all --simulation
-> # this script will update the configure on config/operator.json and config/aggregator.json
-```
+### Aggregator
 
-4. Run the aggregator
 ```
-go run ./cmd/aggregator
-```
-
-5. Run the operator
-```
-go run ./cmd/operator
-```
-
-### With Docker compose
-
-1. build image
-```
-> ./script/docker.sh build
-```
-
-2. init state
-```
-> ./scripts/docker.sh init_state --simulation
-```
-
-3. start aggregator & operator
-```
-> ./scripts/docker.sh run
-```
-
-3. stop all
-```
-> ./scripts/docker.sh stop
+go build -o out/aggregator ./cmd/aggregator
 ```

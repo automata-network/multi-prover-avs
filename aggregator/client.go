@@ -17,6 +17,7 @@ type Client struct {
 }
 
 func NewClient(endpoint string) (*Client, error) {
+	logex.Infof("connecting to aggregator: %v", endpoint)
 	client, err := rpc.Dial(endpoint)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -24,6 +25,12 @@ func NewClient(endpoint string) (*Client, error) {
 	return &Client{
 		client: client,
 	}, nil
+}
+
+type Metadata struct {
+	BatchId    uint64 `json:"batch_id,omitempty"`
+	StartBlock uint64 `json:"start_block"`
+	EndBlock   uint64 `json:"end_block"`
 }
 
 type TaskRequest struct {
@@ -43,7 +50,7 @@ type StateHeader struct {
 
 func (s *StateHeader) ToAbi() *bindings.StateHeader {
 	return &bindings.StateHeader{
-		Identifier:                 new(big.Int).Set((*big.Int)(s.Identifier)),
+		CommitteeId:                new(big.Int).Set((*big.Int)(s.Identifier)),
 		Metadata:                   []byte(s.Metadata),
 		State:                      []byte(s.State),
 		QuorumNumbers:              []byte(s.QuorumNumbers),

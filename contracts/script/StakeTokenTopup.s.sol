@@ -9,12 +9,15 @@ contract StackTokenTopup is Script {
     function setUp() public {}
 
     function run() public {
-        address pk = vm.addr(uint256(vm.envBytes32("TARGET")));
+        address recipient = vm.envAddress("RECIPIENT");
+        if (recipient == address(0)) {
+            recipient = vm.addr(uint256(vm.envBytes32("TARGET")));
+        }
         vm.startBroadcast();
         address strategyAddress = vm.envAddress("STRATEGY_ADDRESS");
         IStrategy strategy = IStrategy(strategyAddress);
         IERC20 token = strategy.underlyingToken();
-        token.transfer(pk, 32000000000000000000);
+        token.transfer(recipient, 32100000000000000000);
         vm.stopBroadcast();
     }
 }
