@@ -41,6 +41,7 @@ type Config struct {
 	EigenMetricsIpPortAddress     string
 	ScanStartBlock                uint64
 	Threshold                     uint64
+	Sampling                      uint64
 
 	Simulation bool
 }
@@ -70,6 +71,9 @@ type Task struct {
 }
 
 func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
+	if cfg.Sampling == 0 {
+		cfg.Sampling = 2000
+	}
 	ecdsaPrivateKey, err := crypto.HexToECDSA(cfg.EcdsaPrivateKey)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -205,7 +209,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 			return logex.Trace(err)
 		}
 		if md.BatchId > 0 {
-			if md.BatchId%2000 != 0 {
+			if md.BatchId%agg.cfg.Sampling != 0 {
 				logex.Info("[scroll] skip task: %#v", md)
 				return nil
 			}

@@ -28,6 +28,8 @@ func (a *AggregatorApi) SubmitTask(ctx context.Context, req *TaskRequest) error 
 			panic(err)
 		}
 	}()
+
+	logex.Infof("received task: %#v", req)
 	if err := a.submitTask(ctx, req); err != nil {
 		logex.Error(err)
 		return err
