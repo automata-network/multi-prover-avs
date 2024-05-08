@@ -210,7 +210,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 		}
 		if md.BatchId > 0 {
 			if md.BatchId%agg.cfg.Sampling != 0 {
-				logex.Info("[scroll] skip task: %#v", md)
+				logex.Infof("[scroll] skip task: %#v", md)
 				return nil
 			}
 		}
