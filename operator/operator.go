@@ -3,60 +3,64 @@ package operator
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"io"
+	"fmt"
 	"math/big"
 	"os"
-	"strconv"
+	"strings"
 	"time"
 
+	"github.com/Layr-Labs/eigensdk-go/nodeapi"
 	sdkTypes "github.com/Layr-Labs/eigensdk-go/types"
+
 	"github.com/automata-network/multi-prover-avs/aggregator"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
+	"github.com/automata-network/multi-prover-avs/xmetric"
+	"github.com/automata-network/multi-prover-avs/xtask"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Operator struct {
 	cfg    *ConfigContext
-	logger *logex.Logger
+	logger *utils.Logger
 
 	operatorAddress common.Address
+	metricName      string
+	semVer          string
 
-	aggregator *aggregator.Client
+	aggregator     *aggregator.Client
+	nodeApi        *nodeapi.NodeApi
+	operatorMetric *xmetric.OperatorCollector
 
 	operatorId    [32]byte
 	metrics       *Metrics
 	quorumNumbers []byte
 
-	proverClient *ProverClient
-	taskFetcher  *LogTracer
-	offset       *os.File
+	proverClient *xtask.ProverClient
 
 	TEELivenessVerifier *TEELivenessVerifier.TEELivenessVerifier
 }
 
-func NewOperator(path string) (*Operator, error) {
+func NewOperator(path string, semVer string) (*Operator, error) {
 	cfg, err := ParseConfigContext(path, nil)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
 
-	proverClient, err := NewProverClient(cfg.Config.ProverURL)
+	proverClient, err := xtask.NewProverClient(cfg.Config.ProverURL)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
 
-	logger := logex.NewLoggerEx(os.Stderr)
+	logger := utils.NewLogger(logex.NewLoggerEx(os.Stderr))
 
 	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifier(cfg.Config.TEELivenessVerifierAddress, cfg.AttestationClient)
 	if err != nil {
@@ -82,84 +86,195 @@ func NewOperator(path string) (*Operator, error) {
 	}
 	quorumNumbers := []byte{0}
 
-	metrics := NewMetrics(cfg.EigenClients, utils.NewLogger(logger), operatorAddress, cfg.Config.EigenMetricsIpPortAddress, quorumNames)
+	operatorMetric := xmetric.NewOperatorCollector("avs", cfg.EigenClients.PrometheusRegistry)
+	metrics := NewMetrics(cfg.AvsName, cfg.EigenClients, logger, operatorAddress, cfg.Config.EigenMetricsIpPortAddress, quorumNames)
+
+	nodeApi := nodeapi.NewNodeApi(cfg.AvsName, semVer, cfg.Config.NodeApiIpPortAddress, logger)
 
 	operator := &Operator{
 		cfg:                 cfg,
+		metricName:          fmt.Sprintf("%v_%v", operatorAddress, semVer),
+		semVer:              semVer,
 		proverClient:        proverClient,
 		logger:              logger,
 		quorumNumbers:       quorumNumbers,
 		aggregator:          aggClient,
 		operatorAddress:     operatorAddress,
 		metrics:             metrics,
+		operatorMetric:      operatorMetric,
+		nodeApi:             nodeApi,
 		TEELivenessVerifier: TEELivenessVerifier,
-	}
-
-	if cfg.Config.TaskFetcher != nil {
-		taskFetcherClient, err := ethclient.Dial(cfg.Config.TaskFetcher.Endpoint)
-		if err != nil {
-			return nil, logex.Trace(err)
-		}
-
-		offsetFile, err := os.OpenFile(cfg.Config.TaskFetcher.OffsetFile, os.O_CREATE|os.O_RDWR, 0644)
-		if err != nil {
-			return nil, logex.Trace(err)
-		}
-
-		operator.offset = offsetFile
-		operator.taskFetcher = NewLogTracer(taskFetcherClient, &LogTracerConfig{
-			Id:               "operator-log-tracer",
-			Wait:             5,
-			Max:              100,
-			ScanIntervalSecs: cfg.Config.TaskFetcher.ScanIntervalSecs,
-			Topics:           cfg.Config.TaskFetcher.Topics,
-			Addresses:        cfg.Config.TaskFetcher.Addresses,
-			Handler:          operator,
-			SkipOnError:      true,
-		})
 	}
 
 	return operator, nil
 }
 
-// callback func for task fetcher
-func (h *Operator) GetBlock() (uint64, error) {
-	data := make([]byte, 16)
-	n, err := h.offset.ReadAt(data, 0)
-	if n == 0 {
-		if err == io.EOF {
-			return 0, nil
+func (o *Operator) Start(ctx context.Context) error {
+	logex.Info("starting operator...")
+	nodeApiErrChan := o.nodeApi.Start()
+
+	if err := o.checkIsRegistered(); err != nil {
+		return logex.Trace(err)
+	}
+	if err := o.RegisterAttestationReport(ctx); err != nil {
+		return logex.Trace(err, utils.EcdsaAddress(o.cfg.AttestationEcdsaKey))
+	}
+	md, err := o.proverClient.Metadata(ctx)
+	if err != nil {
+		return logex.Trace(err, fmt.Sprintf("check prover metadata: %v", o.cfg.Config.ProverURL))
+	}
+	errChan := o.metrics.Serve(o.cfg.Config.EigenMetricsIpPortAddress, o.cfg.Config.ProverURL)
+	go func() {
+		select {
+		case err := <-errChan:
+			logex.Fatal(err)
+		case err := <-nodeApiErrChan:
+			logex.Fatal(err)
 		}
-		return 0, logex.Trace(err, n)
-	}
-	data = bytes.Trim(data[:n], "\x00\r\n ")
+	}()
 
-	number, err := strconv.ParseInt(string(data), 10, 64)
-	if err != nil {
-		return 0, logex.Trace(err)
-	}
-	return uint64(number), nil
-}
+	o.logger.Infof("Started Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v, proverVersion=%v, fetchTaskWithContext=%v",
+		hex.EncodeToString(o.operatorId[:]),
+		o.operatorAddress,
+		o.cfg.BlsKey.GetPubKeyG1(),
+		o.cfg.BlsKey.GetPubKeyG2(),
+		md.Version, md.WithContext,
+	)
 
-// callback func for task fetcher
-func (h *Operator) SaveBlock(offset uint64) error {
-	data := []byte(strconv.FormatUint(offset, 10))
-	_, err := h.offset.WriteAt(data, 0)
-	return err
-}
+	go o.metricExporterLoop(ctx)
+	go o.metadataExport(ctx)
 
-// callback func for task fetcher
-func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
-	blockHeader, err := o.cfg.Client.HeaderByNumber(ctx, nil)
-	if err != nil {
+	if err := o.subscribeTask(ctx, md.WithContext); err != nil {
 		return logex.Trace(err)
 	}
 
-	// parse the task
-	poe, skip, err := o.proverGetPoe(ctx, log.TxHash, log.Topics)
+	return nil
+}
+
+func (o *Operator) metadataExport(ctx context.Context) {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+	export := func() {
+		md, err := o.proverClient.Metadata(ctx)
+		if err != nil {
+			logex.Error(err)
+			return
+		}
+
+		operatorAddr := o.operatorAddress
+		version := o.semVer
+		attestationAddr := utils.EcdsaAddress(o.cfg.AttestationEcdsaKey)
+		proverUrlHash := utils.ProverAddrHash(o.cfg.Config.ProverURL)
+		proverVersion := md.Version
+		proverWithContext := md.WithContext
+		o.operatorMetric.Metadata.WithLabelValues(
+			o.cfg.AvsName,
+			operatorAddr.String(),
+			version,
+			attestationAddr.String(),
+			proverUrlHash.String(),
+			proverVersion,
+			fmt.Sprint(proverWithContext),
+		).Add(1)
+
+	}
+
+	export()
+	for range ticker.C {
+		export()
+	}
+}
+
+func (o *Operator) subscribeTask(ctx context.Context, withContext bool) error {
+	req := &aggregator.FetchTaskReq{
+		PrevTaskID:  0,
+		TaskType:    xtask.ScrollTask,
+		MaxWaitSecs: 100,
+		WithContext: withContext,
+	}
+	for {
+		logex.Infof("fetch task: %#v", req)
+		resp, err := o.aggregator.FetchTask(ctx, req)
+		if err != nil {
+			time.Sleep(time.Second)
+			continue
+		}
+		if resp.TaskID == 0 {
+			time.Sleep(time.Second)
+			continue
+		}
+
+		logex.Infof("accept new task: [%v] %v", resp.TaskType.Value(), resp.TaskID)
+		req.PrevTaskID = resp.TaskID
+
+		o.operatorMetric.FetchTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value(), fmt.Sprint(req.WithContext)).Add(1)
+		o.operatorMetric.LatestTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(resp.TaskID))
+
+		startProcessTask := time.Now()
+		switch resp.TaskType {
+		case xtask.ScrollTask:
+			if err := o.processScrollTask(ctx, resp); err != nil {
+				logex.Error(err)
+			}
+		}
+		o.operatorMetric.ProcessTaskMs.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(time.Since(startProcessTask).Milliseconds()))
+	}
+}
+
+func (o *Operator) metricExporterLoop(ctx context.Context) {
+	export := func() {
+		metrics, err := o.metrics.Gather()
+		if err != nil {
+			logex.Error(err)
+		}
+		newMetric := make([]*xmetric.MetricFamily, 0, len(metrics))
+		for _, item := range metrics {
+			if strings.HasPrefix(*item.Name, "avs") || strings.HasPrefix(*item.Name, "eigen_") {
+				newMetric = append(newMetric, item)
+			}
+		}
+		err = o.aggregator.SubmitMetrics(ctx, &aggregator.SubmitMetricsReq{
+			Name:    o.metricName,
+			Metrics: newMetric,
+		})
+		if err != nil {
+			logex.Error(err)
+		}
+	}
+
+	export()
+	for range time.Tick(600 * time.Second) {
+		export()
+	}
+}
+
+func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.FetchTaskResp) (err error) {
+	var ext xtask.ScrollTaskExt
+	if err := json.Unmarshal(resp.Ext, &ext); err != nil {
+		return logex.Trace(err)
+	}
+	var taskCtx *xtask.ScrollContext
+	if len(resp.Context) == 0 {
+		logex.Info("[scroll] generating task context for:", ext.StartBlock.ToInt(), ext.EndBlock.ToInt())
+		var skip bool
+		taskCtx, skip, err = o.proverClient.GenerateContext(ctx, ext.StartBlock.ToInt().Int64(), ext.EndBlock.ToInt().Int64(), xtask.ScrollTask)
+		if err != nil {
+			return logex.Trace(err)
+		}
+		if skip {
+			return nil
+		}
+	} else {
+		if err := json.Unmarshal(resp.Context, &taskCtx); err != nil {
+			return logex.Trace(err)
+		}
+	}
+
+	poe, skip, err := o.proverClient.GetPoeByPob(ctx, o.operatorAddress, ext.BatchData, taskCtx)
 	if err != nil {
 		return logex.Trace(err)
 	}
+	logex.Pretty(poe)
 	if skip {
 		return nil
 	}
@@ -180,10 +295,8 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 		State:                      poe.Poe.Pack(),
 		QuorumNumbers:              o.quorumNumbers,
 		QuorumThresholdPercentages: []byte{0},
-		ReferenceBlockNumber:       uint32(blockHeader.Number.Int64() - 1),
+		ReferenceBlockNumber:       uint32(ext.ReferenceBlockNumber),
 	}
-
-	logex.Pretty(stateHeader)
 
 	digest, err := stateHeader.Digest()
 	if err != nil {
@@ -191,6 +304,7 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	}
 	sig := o.cfg.BlsKey.SignMessage(digest)
 
+	o.operatorMetric.SubmitTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Add(1)
 	// submit to aggregator
 	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
 		Task:       stateHeader,
@@ -199,42 +313,7 @@ func (o *Operator) OnNewLog(ctx context.Context, log *types.Log) error {
 	}); err != nil {
 		return logex.Trace(err)
 	}
-
-	return nil
-}
-
-func (o *Operator) Start(ctx context.Context) error {
-	logex.Info("starting operator...")
-	isSimulation, err := o.TEELivenessVerifier.Simulation(nil)
-	if err != nil {
-		return logex.Trace(err, "TEE")
-	}
-	if isSimulation != o.cfg.Config.Simulation {
-		return logex.NewErrorf("simulation mode not match with the contract: local:%v, remote:%v", o.cfg.Config.Simulation, isSimulation)
-	}
-	if err := o.checkIsRegistered(); err != nil {
-		return logex.Trace(err)
-	}
-	if err := o.RegisterAttestationReport(ctx); err != nil {
-		return logex.Trace(err, utils.EcdsaAddress(o.cfg.AttestationEcdsaKey))
-	}
-	errChan := o.metrics.Start(ctx)
-	go func() {
-		err := <-errChan
-		logex.Fatal(err)
-	}()
-
-	o.logger.Infof("Started Operator... operator info: operatorId=%v, operatorAddr=%v, operatorG1Pubkey=%v, operatorG2Pubkey=%v",
-		hex.EncodeToString(o.operatorId[:]),
-		o.operatorAddress,
-		o.cfg.BlsKey.GetPubKeyG1(),
-		o.cfg.BlsKey.GetPubKeyG2(),
-	)
-
-	if err := o.taskFetcher.Run(ctx); err != nil {
-		return logex.Trace(err)
-	}
-
+	// logex.Info(poe)
 	return nil
 }
 
@@ -262,51 +341,7 @@ var ABI = func() abi.ABI {
 	return result
 }()
 
-func (o *Operator) proverGetPoe(ctx context.Context, txHash common.Hash, topics []common.Hash) (*PoeResponse, bool, error) {
-	if o.cfg.Config.Simulation {
-		tx, _, err := o.taskFetcher.source.TransactionByHash(ctx, txHash)
-		if err != nil {
-			return nil, false, logex.Trace(err)
-		}
-		args, err := ABI.Methods["commitBatch"].Inputs.Unpack(tx.Data()[4:])
-		if err != nil {
-			return nil, false, logex.Trace(err)
-		}
-
-		startBlock := int64(0)
-		endBlock := int64(0)
-		for _, chunk := range args[2].([][]byte) {
-			for i := 0; i < int(chunk[0]); i++ {
-				blockNumber := int64(binary.BigEndian.Uint64(chunk[1:][i*60 : i*60+8]))
-				if startBlock == 0 {
-					startBlock = blockNumber
-				} else {
-					endBlock = blockNumber
-				}
-			}
-		}
-
-		startBlockHeader, err := o.taskFetcher.source.HeaderByNumber(ctx, big.NewInt(startBlock))
-		if err != nil {
-			return nil, false, logex.Trace(err)
-		}
-		endBlockHeader, err := o.taskFetcher.source.HeaderByNumber(ctx, big.NewInt(endBlock))
-		if err != nil {
-			return nil, false, logex.Trace(err)
-		}
-
-		response := &PoeResponse{
-			Poe: &Poe{
-				BatchHash:     topics[2],
-				NewStateRoot:  endBlockHeader.Root,
-				PrevStateRoot: startBlockHeader.Root,
-			},
-			StartBlock: uint64(startBlock),
-			EndBlock:   uint64(endBlock),
-		}
-		return response, false, nil
-	}
-
+func (o *Operator) proverGetPoe(ctx context.Context, txHash common.Hash, topics []common.Hash) (*xtask.PoeResponse, bool, error) {
 	logex.Infof("fetching poe for batch %v", topics[2])
 	poe, skip, err := o.proverClient.GetPoe(ctx, txHash)
 	if err != nil {
@@ -316,13 +351,6 @@ func (o *Operator) proverGetPoe(ctx context.Context, txHash common.Hash, topics 
 }
 
 func (o *Operator) proverGetAttestationReport(ctx context.Context, pubkey []byte) ([]byte, error) {
-	if o.cfg.Config.Simulation {
-		quote, err := generateSimulationQuote(pubkey)
-		if err != nil {
-			return nil, logex.Trace(err)
-		}
-		return quote, nil
-	}
 	quote, err := o.proverClient.GenerateAttestaionReport(ctx, pubkey)
 	if err != nil {
 		return nil, logex.Trace(err)
@@ -330,11 +358,46 @@ func (o *Operator) proverGetAttestationReport(ctx context.Context, pubkey []byte
 	return quote, nil
 }
 
-func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []byte) error {
-	report, err := o.proverGetAttestationReport(ctx, pubkeyBytes)
+func (o *Operator) selectReferenceBlock(ctx context.Context, reportData *TEELivenessVerifier.TEELivenessVerifierReportDataV2) error {
+	// corner case:
+	//  1. block numbers are not sequential
+	//  2. the types.Header.Hash() may not compatible with the chain
+	headBlock, err := o.cfg.AttestationClient.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return logex.Trace(err)
 	}
+	reportData.ReferenceBlockHash = headBlock.ParentHash
+	referenceBlock, err := o.cfg.AttestationClient.HeaderByHash(ctx, headBlock.ParentHash)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	reportData.ReferenceBlockNumber = referenceBlock.Number
+	return nil
+}
+
+func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []byte) error {
+	var reportData TEELivenessVerifier.TEELivenessVerifierReportDataV2
+	copy(reportData.Pubkey.X[:], pubkeyBytes[:32])
+	copy(reportData.Pubkey.Y[:], pubkeyBytes[32:])
+	reportData.ProverAddressHash = utils.ProverAddrHash(o.cfg.Config.ProverURL)
+	if err := o.selectReferenceBlock(ctx, &reportData); err != nil {
+		return logex.Trace(err)
+	}
+
+	dataHash, err := bindings.ReportDataHash(&reportData)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	reportDataBytes := make([]byte, 64)
+	copy(reportDataBytes[32:], dataHash[:])
+
+	startGenReport := time.Now()
+	report, err := o.proverGetAttestationReport(ctx, reportDataBytes)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	o.operatorMetric.GenReportMs.WithLabelValues(o.cfg.AvsName).Set(float64(time.Since(startGenReport).Milliseconds()))
+
 	chainId, err := o.cfg.AttestationClient.ChainID(ctx)
 	if err != nil {
 		return logex.Trace(err)
@@ -344,20 +407,35 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 		return logex.Trace(err)
 	}
 
-	tx, err := o.TEELivenessVerifier.SubmitLivenessProof(opt, report)
+	tx, err := o.TEELivenessVerifier.SubmitLivenessProofV2(opt, reportData, report)
+	if err != nil {
+		balance, checkErr := o.cfg.AttestationClient.BalanceAt(ctx, opt.From, nil)
+		if checkErr != nil {
+			return logex.Trace(err, "check balance")
+		}
+		return logex.Trace(err, fmt.Sprintf("balance:%v", utils.WeiToF64(balance, 18)))
+	}
+	logex.Infof("submitted liveness proof: %v", tx.Hash())
+	receipt, err := utils.WaitTx(ctx, o.cfg.AttestationClient, tx, nil)
 	if err != nil {
 		return logex.Trace(err)
 	}
-	logex.Infof("submitted liveness proof: %v", tx.Hash())
-	if _, err := utils.WaitTx(ctx, o.cfg.AttestationClient, tx, nil); err != nil {
-		return logex.Trace(err)
+	gasCost := utils.GetTxCost(receipt)
+
+	balance, err := o.cfg.AttestationClient.BalanceAt(ctx, opt.From, nil)
+	if err != nil {
+		return logex.Trace(err, "check balance")
 	}
+	o.operatorMetric.AttestationAccBalance.WithLabelValues(o.cfg.AvsName).Set(utils.WeiToF64(balance, 18))
+
+	o.operatorMetric.LastAttestationCost.WithLabelValues(o.cfg.AvsName).Set(gasCost)
 	logex.Infof("registered in TEELivenessVerifier: %v", tx.Hash())
 	return nil
 }
 
 func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
-	logex.Info("checking tee liveness...")
+	attestationAddr := utils.EcdsaAddress(o.cfg.AttestationEcdsaKey)
+	logex.Infof("checking tee liveness... attestationLayerEcdsaAddress=%v", attestationAddr)
 	pubkeyBytes := o.cfg.BlsKey.PubKey.Serialize()
 	if len(pubkeyBytes) != 64 {
 		return logex.NewErrorf("invalid pubkey")
@@ -370,6 +448,13 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 	if err != nil {
 		return logex.Trace(err)
 	}
+
+	balance, err := o.cfg.AttestationClient.BalanceAt(ctx, attestationAddr, nil)
+	if err != nil {
+		return logex.Trace(err, "check balance")
+	}
+	o.operatorMetric.AttestationAccBalance.WithLabelValues(o.cfg.AvsName).Set(utils.WeiToF64(balance, 18))
+
 	if isRegistered {
 		logex.Info("Operater has registered on TEE Liveness Verifier")
 	} else {
@@ -388,9 +473,11 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 		if err != nil {
 			return logex.Trace(err)
 		}
+		o.operatorMetric.LivenessTs.WithLabelValues(o.cfg.AvsName).Set(float64(prover.Time.Int64()))
 		deadline := prover.Time.Int64() + validSecs.Int64()
 		now := time.Now().Unix()
-		logex.Info("next attestation will be at", time.Unix(deadline, 0))
+		o.operatorMetric.NextAttestationTs.WithLabelValues(o.cfg.AvsName).Set(float64(deadline))
+		logex.Info("next attestation will be at", time.Unix(deadline, 0), ",validSecs=", validSecs.Int64())
 		if deadline > now+300 {
 			time.Sleep(time.Duration(deadline-now-300) * time.Second)
 		}
@@ -401,6 +488,7 @@ func (o *Operator) RegisterAttestationReport(ctx context.Context) error {
 		for {
 			if err := checkNext(ctx); err != nil {
 				logex.Error(err)
+				time.Sleep(10 * time.Second)
 			}
 		}
 	}()

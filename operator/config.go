@@ -1,9 +1,11 @@
 package operator
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
@@ -16,10 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-const (
-	AppName = "multi-prover-operator"
-)
-
 type ConfigContext struct {
 	Config              *Config
 	BlsKey              *bls.KeyPair
@@ -27,6 +25,7 @@ type ConfigContext struct {
 	Client              *ethclient.Client
 	AttestationClient   *ethclient.Client
 	EigenClients        *clients.Clients
+	AvsName             string
 }
 
 func (c *ConfigContext) QueryOperatorAddress() (common.Address, error) {
@@ -46,7 +45,7 @@ func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigCont
 		var err error
 		ecdsaKey, err = crypto.GenerateKey()
 		if err != nil {
-			return nil, logex.Trace(err, "generate test ecdsa key")
+			return nil, logex.Trace(err, "generate test ecdsa key", cfgPath)
 		}
 	}
 	var cfg Config
@@ -57,10 +56,11 @@ func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigCont
 	if err := json.Unmarshal(cfgData, &cfg); err != nil {
 		return nil, logex.Trace(err, cfgPath)
 	}
+	cfg.InitFromEnv()
 
 	kp, err := utils.ReadBlsKey(cfg.BlsKeyFile, cfg.BlsKeyPassword)
 	if err != nil {
-		return nil, logex.Trace(err, cfg.BlsKeyFile)
+		return nil, logex.Trace(err, "BlsKeyFile", cfg.BlsKeyFile, cfgPath)
 	}
 
 	logger := logex.NewLoggerEx(os.Stderr)
@@ -77,12 +77,19 @@ func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigCont
 		return nil, logex.Trace(err, "AttestationLayerRpcURL", cfg.AttestationLayerRpcURL)
 	}
 
+	avsChainID, err := client.ChainID(context.Background())
+	if err != nil {
+		return nil, logex.Trace(err, "check chain ID")
+	}
+
+	avsName := utils.GetAvsName(avsChainID)
+
 	chainioConfig := clients.BuildAllConfig{
 		EthHttpUrl:                 cfg.EthRpcUrl,
-		EthWsUrl:                   cfg.EthWsUrl,
+		EthWsUrl:                   cfg.EthRpcUrl,
 		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress.String(),
 		OperatorStateRetrieverAddr: common.Address{}.String(),
-		AvsName:                    AppName,
+		AvsName:                    avsName,
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
 
@@ -108,30 +115,42 @@ func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigCont
 		EigenClients:        eigenClients,
 		AttestationEcdsaKey: attestationEcdsaKey,
 		AttestationClient:   attestationClient,
+		AvsName:             avsName,
 	}, nil
 }
 
 type Config struct {
 	ProverURL     string
 	AggregatorURL string
-	Simulation    bool
 	Identifier    int64
-
-	TaskFetcher *TaskFetcher
 
 	BlsKeyFile     string
 	BlsKeyPassword string
 
 	EthRpcUrl string
-	EthWsUrl  string
 
 	AttestationLayerEcdsaKey string
 	AttestationLayerRpcURL   string
 
-	StrategyAddress            common.Address
 	RegistryCoordinatorAddress common.Address
 	TEELivenessVerifierAddress common.Address
 	EigenMetricsIpPortAddress  string
+	NodeApiIpPortAddress       string
+}
+
+func (c *Config) InitFromEnv() {
+	if c.NodeApiIpPortAddress == "" {
+		c.NodeApiIpPortAddress = ":15692"
+	}
+}
+
+func (c *Config) check(env *string) {
+	if strings.HasPrefix(*env, "$") {
+		envVal := os.Getenv((*env)[1:])
+		if envVal != "" {
+			*env = envVal
+		}
+	}
 }
 
 type TaskFetcher struct {

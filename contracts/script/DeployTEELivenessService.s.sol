@@ -2,6 +2,10 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 
+import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {EmptyContract} from "./utils/EmptyContract.sol";
+
 import "@dcap-v3-attestation/utils/SigVerifyLib.sol";
 import "@dcap-v3-attestation/lib/PEMCertChainLib.sol";
 import "@dcap-v3-attestation/AutomataDcapV3Attestation.sol";
@@ -17,20 +21,78 @@ contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
 
     function setUp() public {}
 
-    function run() public {
-        bool simulation = vm.envBool("SIMULATION");
-        vm.startBroadcast();
+    struct Output {
+        address SigVerifyLib;
+        address PEMCertChainLib;
+        address AutomataDcapV3Attestation;
+        address TEELivenessVerifier;
+        address TEELivenessVerifierImpl;
+        string object;
+    }
 
-        SigVerifyLib sigVerifyLib = new SigVerifyLib();
-        PEMCertChainLib pemCertLib = new PEMCertChainLib();
-        AutomataDcapV3Attestation attestation = new AutomataDcapV3Attestation(
-            address(sigVerifyLib),
-            address(pemCertLib)
+    function getOutputFilePath() private view returns (string memory) {
+        string memory env = vm.envString("ENV");
+        return
+            string.concat(
+                vm.projectRoot(),
+                "/script/output/tee_deploy_output_",
+                env,
+                ".json"
+            );
+    }
+
+    function readJson() private returns (string memory) {
+        bytes32 remark = keccak256(abi.encodePacked("remark"));
+        string memory output = vm.readFile(getOutputFilePath());
+        string[] memory keys = vm.parseJsonKeys(output, ".");
+        for (uint i = 0; i < keys.length; i++) {
+            if (keccak256(abi.encodePacked(keys[i])) == remark) {
+                continue;
+            }
+            string memory keyPath = string(abi.encodePacked(".", keys[i]));
+            vm.serializeAddress(
+                output,
+                keys[i],
+                vm.parseJsonAddress(output, keyPath)
+            );
+        }
+        return output;
+    }
+
+    function saveJson(string memory json) private {
+        string memory finalJson = vm.serializeString(
+            json,
+            "remark",
+            "TEELivenessVerifier"
         );
+        vm.writeJson(finalJson, getOutputFilePath());
+    }
 
-        TEELivenessVerifier verifier = new TEELivenessVerifier(
-            address(attestation),
-            simulation
+    function deploySigVerifyLib() public {
+        vm.startBroadcast();
+        SigVerifyLib sigVerifyLib = new SigVerifyLib();
+        vm.stopBroadcast();
+
+        string memory output = readJson();
+        vm.serializeAddress(output, "SigVerifyLib", address(sigVerifyLib));
+        saveJson(output);
+    }
+
+    function deployPEMCertChainLib() public {
+        vm.startBroadcast();
+        PEMCertChainLib pemCertLib = new PEMCertChainLib();
+        vm.stopBroadcast();
+        string memory output = readJson();
+        vm.serializeAddress(output, "PEMCertChainLib", address(pemCertLib));
+        saveJson(output);
+    }
+
+    function deployAttestation() public {
+        string memory output = readJson();
+        vm.startBroadcast();
+        AutomataDcapV3Attestation attestation = new AutomataDcapV3Attestation(
+            vm.parseJsonAddress(output, ".SigVerifyLib"),
+            vm.parseJsonAddress(output, ".PEMCertChainLib")
         );
 
         {
@@ -70,21 +132,106 @@ contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
         (bool succ, ) = attestation.verifyAttestation(data);
         require(succ);
 
-        string memory output = "tee liveness verifier contract";
-        vm.serializeAddress(output, "SigVerifyLib", address(sigVerifyLib));
-        vm.serializeAddress(output, "PEMCertChainLib", address(pemCertLib));
         vm.serializeAddress(
             output,
             "AutomataDcapV3Attestation",
             address(attestation)
         );
-        vm.serializeAddress(output, "TEELivenessVerifier", address(verifier));
+        saveJson(output);
+    }
 
-        string memory outputFilePath = string.concat(
-            vm.projectRoot(),
-            "/script/output/tee_deploy_output.json"
+    function deployProxyAdmin() public {
+        string memory output = readJson();
+        vm.startBroadcast();
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        vm.stopBroadcast();
+        vm.serializeAddress(output, "ProxyAdmin", address(proxyAdmin));
+        saveJson(output);
+    }
+
+    function deployVerifier() public {
+        uint256 version = vm.envUint("VERSION");
+        require(version < 255, "version overflowed");
+
+        uint256 attestValiditySecs = vm.envUint("ATTEST_VALIDITY_SECS");
+
+        uint256 maxBlockNumberDiff = vm.envUint("MAX_BLOCK_NUMBER_DIFF");
+        string memory output = readJson();
+        ProxyAdmin proxyAdmin = ProxyAdmin(
+            vm.parseJsonAddress(output, ".ProxyAdmin")
         );
-        string memory finalJson = vm.serializeString(output, "object", output);
-        vm.writeJson(finalJson, outputFilePath);
+        address attestationAddr = vm.parseJsonAddress(
+            output,
+            ".AutomataDcapV3Attestation"
+        );
+        address verifierProxyAddr;
+
+        vm.startBroadcast();
+        TEELivenessVerifier verifierImpl = new TEELivenessVerifier();
+        bytes memory initializeCall;
+        if (
+            vm.keyExistsJson(output, ".TEELivenessVerifierProxy") && version > 1
+        ) {
+            verifierProxyAddr = vm.parseJsonAddress(
+                output,
+                ".TEELivenessVerifierProxy"
+            );
+            console.log("reuse proxy");
+            console.logAddress(verifierProxyAddr);
+        } else {
+            console.log("Deploy new proxy");
+            EmptyContract emptyContract = new EmptyContract();
+            verifierProxyAddr = address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            );
+        }
+        if (version <= 1) {
+            initializeCall = abi.encodeWithSelector(
+                TEELivenessVerifier.initialize.selector,
+                msg.sender,
+                address(attestationAddr),
+                maxBlockNumberDiff,
+                attestValiditySecs
+            );
+        } else {
+            initializeCall = abi.encodeWithSelector(
+                TEELivenessVerifier.reinitialize.selector,
+                version,
+                msg.sender,
+                address(attestationAddr),
+                maxBlockNumberDiff,
+                attestValiditySecs
+            );
+        }
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(verifierProxyAddr),
+            address(verifierImpl),
+            initializeCall
+        );
+        vm.stopBroadcast();
+
+        vm.serializeAddress(
+            output,
+            "TEELivenessVerifierProxy",
+            verifierProxyAddr
+        );
+        vm.serializeAddress(
+            output,
+            "TEELivenessVerifierImpl",
+            address(verifierImpl)
+        );
+        saveJson(output);
+    }
+
+    function all() public {
+        deploySigVerifyLib();
+        deployPEMCertChainLib();
+        deployAttestation();
+        deployProxyAdmin();
+        deployVerifier();
     }
 }

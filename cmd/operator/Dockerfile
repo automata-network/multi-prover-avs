@@ -9,6 +9,8 @@ WORKDIR /app/operator
 COPY ./cmd/operator ./cmd/operator
 COPY aggregator ./aggregator
 COPY operator ./operator
+COPY xmetric ./xmetric
+COPY xtask ./xtask
 COPY contracts/bindings ./contracts/bindings
 COPY utils ./utils
 COPY go.mod ./
