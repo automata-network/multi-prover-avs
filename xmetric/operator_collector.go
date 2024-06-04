@@ -27,7 +27,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.CounterOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "counter_metadata",
+				Name:      "metadata_counter",
 				Help:      "metadata",
 			},
 			[]string{"avs_name", "operator_addr", "version", "attestation_addr", "prover_url_hash", "prover_version", "task_fetch_with_context"},
@@ -36,7 +36,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.CounterOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "counter_fetch_task",
+				Name:      "fetch_task_counter",
 				Help:      "numbers of request for fetching task from the aggregator",
 			},
 			[]string{"avs_name", "type", "with_context"},
@@ -45,7 +45,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.CounterOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "counter_submit_task",
+				Name:      "submit_task_counter",
 				Help:      "numbers of request for submiting task to the aggregator",
 			},
 			[]string{"avs_name", "type"},
@@ -54,7 +54,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "gauge_latest_task",
+				Name:      "latest_task_gauge",
 				Help:      "trace the latest task id",
 			},
 			[]string{"avs_name", "type"},
@@ -63,7 +63,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "gauge_process_task_ms",
+				Name:      "process_task_ms_gauge",
 				Help:      "The time it takes to process the task in milliseconds",
 			},
 			[]string{"avs_name", "type"},
@@ -72,7 +72,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "gauge_gen_report_ms",
+				Name:      "gen_report_ms_gauge",
 				Help:      "milliseconds for generating attestation report",
 			},
 			[]string{"avs_name"},
@@ -81,7 +81,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "const_liveness_ts",
+				Name:      "liveness_ts_gauge",
 				Help:      "timestamp for last attestation submition",
 			},
 			[]string{"avs_name"},
@@ -90,7 +90,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "const_next_attestation_ts",
+				Name:      "next_attestation_ts_gauge",
 				Help:      "the time for next attestation",
 			},
 			[]string{"avs_name"},
@@ -99,7 +99,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "gauge_last_attestation_cost",
+				Name:      "last_attestation_cost_gauge",
 				Help:      "the cost of latest attestation",
 			},
 			[]string{"avs_name"},
@@ -108,7 +108,7 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 			prometheus.GaugeOpts{
 				Namespace: app,
 				Subsystem: LabelOperator,
-				Name:      "attestation_acc_balance",
+				Name:      "attestation_acc_balance_gauge",
 				Help:      "The time it takes to process the task in milliseconds",
 			},
 			[]string{"avs_name"},

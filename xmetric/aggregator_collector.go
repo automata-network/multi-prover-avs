@@ -36,7 +36,7 @@ func NewAggregatorCollector(app string) *AggregatorCollector {
 			prometheus.CounterOpts{
 				Namespace: app,
 				Subsystem: LabelAggregator,
-				Name:      "new_task",
+				Name:      "new_task_counter",
 				Help:      "new task counter",
 			},
 			[]string{"type"},
@@ -45,7 +45,7 @@ func NewAggregatorCollector(app string) *AggregatorCollector {
 			prometheus.CounterOpts{
 				Namespace: app,
 				Subsystem: LabelAggregator,
-				Name:      "fetch_task",
+				Name:      "fetch_task_counter",
 				Help:      "fetch task counter",
 			},
 			[]string{"type", "with_context"},
