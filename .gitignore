@@ -13,6 +13,6 @@ docs/
 
 # Dotenv file
 .env
-config/operator_task_fetcher.offset
+config/
 .DS_Store
 /bin
