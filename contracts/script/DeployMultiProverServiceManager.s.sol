@@ -32,19 +32,37 @@ contract DeployMultiProverServiceManager is Script {
         vm.startBroadcast();
 
         // These are deployed strategies used by EigenDA on Holesky testnet, we will also use them for multi-prover AVS
-        address[] memory quorum0Strategies = new address[](11);
+        // address[] memory quorum0Strategies = new address[](11);
+        // {
+        //     quorum0Strategies[0] = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0; // Virtual strategy for beacon chain ETH
+        //     quorum0Strategies[1] = 0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3; // stETH strategy
+        //     quorum0Strategies[2] = 0x3A8fBdf9e77DFc25d09741f51d3E181b25d0c4E0; // rETH strategy
+        //     quorum0Strategies[3] = 0x05037A81BD7B4C9E0F7B430f1F2A22c31a2FD943; // lsETH strategy
+        //     quorum0Strategies[4] = 0x9281ff96637710Cd9A5CAcce9c6FAD8C9F54631c; // sfrxETH strategy
+        //     quorum0Strategies[5] = 0x31B6F59e1627cEfC9fA174aD03859fC337666af7; // ETHx strategy
+        //     quorum0Strategies[6] = 0x46281E3B7fDcACdBa44CADf069a94a588Fd4C6Ef; // osETH strategy
+        //     quorum0Strategies[7] = 0x70EB4D3c164a6B4A5f908D4FBb5a9cAfFb66bAB6; // cbETH strategy
+        //     quorum0Strategies[8] = 0xaccc5A86732BE85b5012e8614AF237801636F8e5; // mETH strategy
+        //     quorum0Strategies[9] = 0x7673a47463F80c6a3553Db9E54c8cDcd5313d0ac; // ankrETH strategy
+        //     quorum0Strategies[10] = 0x80528D6e9A2BAbFc766965E0E26d5aB08D9CFaF9; // WETH strategy
+        // }
+
+        // These are deployed strategies used by EigenDA on Ethereum mainnet, we will also use them for multi-prover AVS
+        address[] memory quorum0Strategies = new address[](13);
         {
             quorum0Strategies[0] = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0; // Virtual strategy for beacon chain ETH
-            quorum0Strategies[1] = 0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3; // stETH strategy
-            quorum0Strategies[2] = 0x3A8fBdf9e77DFc25d09741f51d3E181b25d0c4E0; // rETH strategy
-            quorum0Strategies[3] = 0x05037A81BD7B4C9E0F7B430f1F2A22c31a2FD943; // lsETH strategy
-            quorum0Strategies[4] = 0x9281ff96637710Cd9A5CAcce9c6FAD8C9F54631c; // sfrxETH strategy
-            quorum0Strategies[5] = 0x31B6F59e1627cEfC9fA174aD03859fC337666af7; // ETHx strategy
-            quorum0Strategies[6] = 0x46281E3B7fDcACdBa44CADf069a94a588Fd4C6Ef; // osETH strategy
-            quorum0Strategies[7] = 0x70EB4D3c164a6B4A5f908D4FBb5a9cAfFb66bAB6; // cbETH strategy
-            quorum0Strategies[8] = 0xaccc5A86732BE85b5012e8614AF237801636F8e5; // mETH strategy
-            quorum0Strategies[9] = 0x7673a47463F80c6a3553Db9E54c8cDcd5313d0ac; // ankrETH strategy
-            quorum0Strategies[10] = 0x80528D6e9A2BAbFc766965E0E26d5aB08D9CFaF9; // WETH strategy
+            quorum0Strategies[1] = 0x93c4b944D05dfe6df7645A86cd2206016c51564D; // stETH strategy
+            quorum0Strategies[2] = 0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2; // rETH strategy
+            quorum0Strategies[3] = 0xAe60d8180437b5C34bB956822ac2710972584473; // lsETH strategy
+            quorum0Strategies[4] = 0x8CA7A5d6f3acd3A7A8bC468a8CD0FB14B6BD28b6; // sfrxETH strategy
+            quorum0Strategies[5] = 0x9d7eD45EE2E8FC5482fa2428f15C971e6369011d; // ETHx strategy
+            quorum0Strategies[6] = 0x57ba429517c3473B6d34CA9aCd56c0e735b94c02; // osETH strategy
+            quorum0Strategies[7] = 0x54945180dB7943c0ed0FEE7EdaB2Bd24620256bc; // cbETH strategy
+            quorum0Strategies[8] = 0x298aFB19A105D59E74658C4C334Ff360BadE6dd2; // mETH strategy
+            quorum0Strategies[9] = 0x13760F50a9d7377e4F20CB8CF9e4c26586c658ff; // ankrETH strategy
+            quorum0Strategies[10] = 0xa4C637e0F704745D182e4D38cAb7E7485321d059; // OETH strategy
+            quorum0Strategies[11] = 0x0Fe4F44beE93503346A3Ac9EE5A26b130a5796d6; // swETH strategy
+            quorum0Strategies[12] = 0x7CA911E83dabf90C90dD3De5411a10F1A6112184; // wBETH strategy
         }
 
         EmptyContract emptyContract = new EmptyContract();
@@ -96,14 +114,14 @@ contract DeployMultiProverServiceManager is Script {
         {
             // Upgrade and initialize RegistryCoordinator
             // Quorum config:                      
-            //      - max 10 operator
-            //      - minimum stake is 32 ETH/LST
+            //      - max 50 operator
+            //      - minimum stake is 0.01 ETH/LST
             //      - 1.1 times the stake of original operators to kick it out
             //      - the stake of original stackers should be less than 5% of the total stake
             IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams = new IRegistryCoordinator.OperatorSetParam[](1);
-            operatorSetParams[0] = IRegistryCoordinator.OperatorSetParam(uint32(10), uint16(11000), uint16(500));
+            operatorSetParams[0] = IRegistryCoordinator.OperatorSetParam(uint32(50), uint16(11000), uint16(200));
             uint96[] memory minimumStakeForQuourm = new uint96[](1);
-            minimumStakeForQuourm[0] = uint96(32000000000000000000);
+            minimumStakeForQuourm[0] = uint96(10000000000000000);
             IStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers = new IStakeRegistry.StrategyParams[][](1);
             {
                 // address strategyManager = vm.envAddress("STRATEGY_MANAGER");
@@ -168,6 +186,7 @@ contract DeployMultiProverServiceManager is Script {
         vm.serializeAddress(output, "registryCoordinator", address(registryCoordinator));
         vm.serializeAddress(output, "multiProverServiceManager", address(multiProverServiceManager));
         vm.serializeAddress(output, "operatorStateRetriever", address(operatorStateRetriever));
+        vm.serializeAddress(output, "proxyAdmin", address(proxyAdmin));
 
         string memory outputFilePath = string.concat(vm.projectRoot(), "/script/output/avs_deploy_output.json");
         string memory finalJson = vm.serializeString(output, "object", output);
