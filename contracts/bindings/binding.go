@@ -12,6 +12,7 @@ import (
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/BLSApkRegistry"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/ERC20"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -21,6 +22,14 @@ import (
 
 var MultiProverABI = func() *abi.ABI {
 	abi, err := MultiProverServiceManager.MultiProverServiceManagerMetaData.GetAbi()
+	if err != nil {
+		panic(err)
+	}
+	return abi
+}()
+
+var TEELivenessVerifierABI = func() *abi.ABI {
+	abi, err := TEELivenessVerifier.TEELivenessVerifierMetaData.GetAbi()
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +67,6 @@ func GetBlsApkRegistryCaller(caller bind.ContractCaller, getter BlsApkRegistryGe
 }
 
 func GetOperatorAddrFromBlsKey(blskey *bls.KeyPair, caller bind.ContractCaller, getter BlsApkRegistryGetter) (common.Address, error) {
-
 	blsApkRegistry, err := GetBlsApkRegistryCaller(caller, getter)
 	if err != nil {
 		return common.Address{}, logex.Trace(err)
@@ -69,6 +77,18 @@ func GetOperatorAddrFromBlsKey(blskey *bls.KeyPair, caller bind.ContractCaller, 
 		return common.Address{}, logex.Trace(err)
 	}
 	return blsBindOperatorAddr, nil
+}
+
+func GetOperatorAddrByOperatorID(caller bind.ContractCaller, getter BlsApkRegistryGetter, operatorId [32]byte) (common.Address, error) {
+	blsApkRegistry, err := GetBlsApkRegistryCaller(caller, getter)
+	if err != nil {
+		return common.Address{}, logex.Trace(err)
+	}
+	operatorAddr, err := blsApkRegistry.GetOperatorFromPubkeyHash(nil, operatorId)
+	if err != nil {
+		return common.Address{}, logex.Trace(err)
+	}
+	return operatorAddr, nil
 }
 
 func DigestStateHeader(s *StateHeader) (types.TaskResponseDigest, error) {
@@ -85,6 +105,14 @@ func DigestStateHeader(s *StateHeader) (types.TaskResponseDigest, error) {
 	copy(taskResponseDigest[:], hasher.Sum(nil)[:32])
 
 	return taskResponseDigest, nil
+}
+
+func Keccak256(data []byte) common.Hash {
+	var taskResponseDigest [32]byte
+	hasher := sha3.NewLegacyKeccak256()
+	hasher.Write(data)
+	copy(taskResponseDigest[:], hasher.Sum(nil)[:32])
+	return taskResponseDigest
 }
 
 func ConvertToBN254G1Point(input *bls.G1Point) MultiProverServiceManager.BN254G1Point {
@@ -131,4 +159,18 @@ func DecodeError(abi *abi.ABI, err error) error {
 		}
 	}
 	return logex.NewErrorf("%v: %v", je.Error(), errorData)
+}
+
+func ReportDataHash(reportData *TEELivenessVerifier.TEELivenessVerifierReportDataV2) (common.Hash, error) {
+	method, ok := TEELivenessVerifierABI.Methods["submitLivenessProofV2"]
+	if !ok {
+		return common.Hash{}, logex.NewErrorf("method submitLivenessProofV2 not found in ABI")
+	}
+	args := abi.Arguments(method.Inputs[:1])
+	data, err := args.Pack(reportData)
+	if err != nil {
+		return common.Hash{}, logex.Trace(err, "PackReportDataV2")
+	}
+
+	return Keccak256(data), nil
 }

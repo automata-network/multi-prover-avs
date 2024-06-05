@@ -3,20 +3,25 @@ package aggregator
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
-	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
-	blsagg "github.com/Layr-Labs/eigensdk-go/services/bls_aggregation"
-	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/MultiProverServiceManager"
+	"github.com/automata-network/multi-prover-avs/contracts/bindings/RegistryCoordinator"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings/TEELivenessVerifier"
 	"github.com/automata-network/multi-prover-avs/utils"
+	"github.com/automata-network/multi-prover-avs/xmetric"
+	"github.com/automata-network/multi-prover-avs/xtask"
+
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
+	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
+	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/chzyer/logex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,18 +34,24 @@ type Config struct {
 	ListenAddr       string
 	TimeToExpirySecs int
 
-	EcdsaPrivateKey                    string
-	EthHttpEndpoint                    string
-	EthWsEndpoint                      string
-	AttestationLayerRpcURL             string
-	MultiProverContractAddress         common.Address
-	TEELivenessVerifierContractAddress common.Address
+	EcdsaPrivateKey                      string
+	EthHttpEndpoint                      string
+	EthWsEndpoint                        string
+	AttestationLayerRpcURL               string
+	MultiProverContractAddress           common.Address
+	TEELivenessVerifierContractAddressV1 common.Address
+	TEELivenessVerifierContractAddress   common.Address
 
 	AVSRegistryCoordinatorAddress common.Address
 	OperatorStateRetrieverAddress common.Address
 	EigenMetricsIpPortAddress     string
 	ScanStartBlock                uint64
 	Threshold                     uint64
+	Sampling                      uint64
+
+	OpenTelemetry *xmetric.OpenTelemetryConfig
+
+	TaskFetcher []*xtask.TaskManagerConfig
 
 	Simulation bool
 }
@@ -48,16 +59,22 @@ type Config struct {
 type Aggregator struct {
 	cfg *Config
 
-	blsAggregationService blsagg.BlsAggregationService
+	blsAggregationService BlsAggregationService
 	transactOpt           *bind.TransactOpts
+
+	TaskManager *xtask.TaskManager
 
 	client *ethclient.Client
 
-	multiProverContract *MultiProverServiceManager.MultiProverServiceManager
-	TEELivenessVerifier *TEELivenessVerifier.TEELivenessVerifierCaller
-	registry            *avsregistry.AvsRegistryServiceChainCaller
+	multiProverContract   *MultiProverServiceManager.MultiProverServiceManager
+	TEELivenessVerifierV1 *TEELivenessVerifier.TEELivenessVerifierCaller
+	TEELivenessVerifierV2 *TEELivenessVerifier.TEELivenessVerifierCaller
+	registry              *avsregistry.AvsRegistryServiceChainCaller
+	registryCoordinator   *RegistryCoordinator.RegistryCoordinator
 
 	eigenClients *clients.Clients
+
+	Collector *xmetric.AggregatorCollector
 
 	taskMutex    sync.Mutex
 	taskIndexSeq uint32
@@ -70,21 +87,25 @@ type Task struct {
 }
 
 func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
+	if cfg.Sampling == 0 {
+		cfg.Sampling = 2000
+	}
+	logex.Info("Multi Prover Aggregator Initializing...")
 	ecdsaPrivateKey, err := crypto.HexToECDSA(cfg.EcdsaPrivateKey)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
 	client, err := ethclient.Dial(cfg.EthHttpEndpoint)
 	if err != nil {
-		return nil, logex.Trace(err)
+		return nil, logex.Trace(err, fmt.Sprintf("dial:%q", cfg.EthHttpEndpoint))
 	}
 	attestationClient, err := ethclient.Dial(cfg.AttestationLayerRpcURL)
 	if err != nil {
-		return nil, logex.Trace(err, cfg.AttestationLayerRpcURL)
+		return nil, logex.Trace(err, fmt.Sprintf("connecting to AttestationLayerRpcURL:%q", cfg.AttestationLayerRpcURL))
 	}
 	chainId, err := client.ChainID(ctx)
 	if err != nil {
-		return nil, logex.Trace(err)
+		return nil, logex.Trace(err, "fetch chainID")
 	}
 	transactOpt, err := bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, chainId)
 	if err != nil {
@@ -106,18 +127,38 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		return nil, logex.Trace(err)
 	}
 
+	multiProverContract, err := MultiProverServiceManager.NewMultiProverServiceManager(cfg.MultiProverContractAddress, client)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	teeLivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddress, attestationClient)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	var teeLivenessVerifierV1 *TEELivenessVerifier.TEELivenessVerifierCaller
+	var emptyAddr common.Address
+	if cfg.TEELivenessVerifierContractAddressV1 != emptyAddr {
+		teeLivenessVerifierV1, err = TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddressV1, attestationClient)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+	}
+
+	collector := xmetric.NewAggregatorCollector("avs")
+
+	taskManager, err := xtask.NewTaskManager(collector, int64(cfg.Sampling), eigenClients.EthHttpClient, cfg.TaskFetcher)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+
 	operatorPubkeysService, err := NewOperatorPubkeysService(ctx, client, eigenClients.AvsRegistryChainSubscriber, eigenClients.AvsRegistryChainReader, logger, "", cfg.ScanStartBlock, 5000)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
 	avsRegistryService := avsregistry.NewAvsRegistryServiceChainCaller(eigenClients.AvsRegistryChainReader, operatorPubkeysService, logger)
-	blsAggregationService := blsagg.NewBlsAggregatorService(avsRegistryService, logger)
+	blsAggregationService := NewBlsAggregatorService(avsRegistryService, logger)
 
-	multiProverContract, err := MultiProverServiceManager.NewMultiProverServiceManager(cfg.MultiProverContractAddress, client)
-	if err != nil {
-		return nil, logex.Trace(err)
-	}
-	TEELivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddress, attestationClient)
+	registryCoordinator, err := RegistryCoordinator.NewRegistryCoordinator(cfg.AVSRegistryCoordinatorAddress, client)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -126,12 +167,73 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		cfg:                   cfg,
 		transactOpt:           transactOpt,
 		client:                client,
+		eigenClients:          eigenClients,
 		blsAggregationService: blsAggregationService,
 		multiProverContract:   multiProverContract,
-		TEELivenessVerifier:   TEELivenessVerifier,
+		TEELivenessVerifierV1: teeLivenessVerifierV1,
+		TEELivenessVerifierV2: teeLivenessVerifier,
+		registryCoordinator:   registryCoordinator,
 		registry:              avsRegistryService,
+		TaskManager:           taskManager,
 		taskIndexMap:          make(map[types.Bytes32]*Task),
+		Collector:             collector,
 	}, nil
+}
+
+func (agg *Aggregator) startUpdateOperators(ctx context.Context) (func() error, error) {
+	quorumNums := types.QuorumNums{0}
+	blockNumber, err := agg.client.BlockNumber(ctx)
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	states, err := agg.registry.GetOperatorsAvsStateAtBlock(ctx, quorumNums, uint32(blockNumber))
+	if err != nil {
+		return nil, logex.Trace(err)
+	}
+	var operators []common.Address
+	for k := range states {
+		operatorAddr, err := agg.eigenClients.AvsRegistryChainReader.GetOperatorFromId(nil, k)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		isRegistered, err := agg.eigenClients.AvsRegistryChainReader.IsOperatorRegistered(nil, operatorAddr)
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		if isRegistered {
+			operators = append(operators, operatorAddr)
+		}
+	}
+
+	newOpt := *agg.transactOpt
+	newOpt.NoSend = true
+	for i := 1; i < len(operators); i++ {
+		tx, err := agg.registryCoordinator.UpdateOperators(&newOpt, operators[:i])
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		logex.Infof("tx hash: %v -> %v", i, tx.Gas())
+	}
+	// logex.Info(states)
+	return func() error { return nil }, nil
+}
+
+func (agg *Aggregator) verifyKey(x [32]byte, y [32]byte) (bool, error) {
+	if agg.TEELivenessVerifierV1 != nil {
+		pass, err := agg.TEELivenessVerifierV1.VerifyLivenessProof(nil, x, y)
+		if err != nil {
+			return false, logex.Trace(err, "v1")
+		}
+		if pass {
+			return true, nil
+		}
+	}
+
+	pass, err := agg.TEELivenessVerifierV2.VerifyLivenessProof(nil, x, y)
+	if err != nil {
+		return false, logex.Trace(err, "v2")
+	}
+	return pass, nil
 }
 
 func (agg *Aggregator) startRpcServer(ctx context.Context) (func() error, error) {
@@ -161,13 +263,11 @@ func (agg *Aggregator) startRpcServer(ctx context.Context) (func() error, error)
 }
 
 func (agg *Aggregator) Start(ctx context.Context) error {
-	isSimulation, err := agg.TEELivenessVerifier.Simulation(nil)
-	if err != nil {
-		return logex.Trace(err)
-	}
-	if isSimulation != agg.cfg.Simulation {
-		return logex.NewErrorf("simulation mode not match with the contract: local:%v, remote:%v", agg.cfg.Simulation, isSimulation)
-	}
+	// serveUpdateTask, err := agg.startUpdateOperators(context.Background())
+	// if err != nil {
+	// 	return logex.Trace(err)
+	// }
+	// serveUpdateTask()
 
 	serveHttp, err := agg.startRpcServer(ctx)
 	if err != nil {
@@ -176,7 +276,25 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 
 	errChan := make(chan error)
 	go func() {
+		if err := xmetric.ExportMetricToOpenTelemetry(agg.cfg.OpenTelemetry, agg.Collector); err != nil {
+			errChan <- logex.Trace(err)
+		}
+	}()
+
+	go func() {
+		if err := agg.Collector.Serve(agg.cfg.EigenMetricsIpPortAddress); err != nil {
+			errChan <- logex.Trace(err)
+		}
+	}()
+
+	go func() {
 		if err := serveHttp(); err != nil {
+			errChan <- logex.Trace(err)
+		}
+	}()
+
+	go func() {
+		if err := agg.TaskManager.Run(ctx); err != nil {
 			errChan <- logex.Trace(err)
 		}
 	}()
@@ -205,8 +323,8 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 			return logex.Trace(err)
 		}
 		if md.BatchId > 0 {
-			if md.BatchId%2000 != 0 {
-				logex.Info("[scroll] skip task: %#v", md)
+			if md.BatchId%agg.cfg.Sampling != 0 {
+				logex.Infof("[scroll] skip task: %#v", md)
 				return nil
 			}
 		}
@@ -245,12 +363,14 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 	}
 
 	if err := agg.blsAggregationService.ProcessNewSignature(ctx, task.index, digest, req.Signature, req.OperatorId); err != nil {
-		return logex.Trace(err)
+		if !strings.Contains(err.Error(), "already completed") {
+			return logex.Trace(err)
+		}
 	}
 	return nil
 }
 
-func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, task *Task, blsAggServiceResp blsagg.BlsAggregationServiceResponse) error {
+func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, task *Task, blsAggServiceResp BlsAggregationServiceResponse) error {
 	if blsAggServiceResp.Err != nil {
 		return logex.Trace(blsAggServiceResp.Err)
 	}
@@ -287,6 +407,7 @@ func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, tas
 			select {
 			case <-ctx.Done():
 				logex.Error(ctx.Err())
+				return
 			default:
 				receipt, _ := agg.client.TransactionReceipt(ctx, tx.Hash())
 				if receipt != nil {

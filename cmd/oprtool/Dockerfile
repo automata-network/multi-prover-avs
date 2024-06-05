@@ -11,6 +11,8 @@ COPY operator ./operator
 COPY aggregator ./aggregator
 COPY contracts/bindings ./contracts/bindings
 COPY utils ./utils
+COPY xmetric ./xmetric
+COPY xtask ./xtask
 COPY go.mod ./
 COPY go.sum ./
 COPY vendor ./vendor

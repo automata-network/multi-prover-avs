@@ -34,7 +34,7 @@ func main() {
 		fmt.Printf("Version:%v, GitCommit:%v, GitDate:%v\n", SemVer, GitCommit, GitDate)
 		return
 	}
-	o, err := operator.NewOperator(flag.Config)
+	o, err := operator.NewOperator(flag.Config, SemVer)
 	if err != nil {
 		logex.Fatal(err)
 	}

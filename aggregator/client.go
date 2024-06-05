@@ -75,3 +75,19 @@ func (c *Client) SubmitTask(ctx context.Context, task *TaskRequest) error {
 	}
 	return nil
 }
+
+func (c *Client) FetchTask(ctx context.Context, task *FetchTaskReq) (*FetchTaskResp, error) {
+	var result *FetchTaskResp
+	if err := c.client.CallContext(ctx, &result, "aggregator_fetchTask", task); err != nil {
+		return nil, logex.Trace(err)
+	}
+	return result, nil
+}
+
+func (c *Client) SubmitMetrics(ctx context.Context, req *SubmitMetricsReq) error {
+	var result interface{}
+	if err := c.client.CallContext(ctx, &result, "aggregator_submitMetrics", req); err != nil {
+		return logex.Trace(err)
+	}
+	return nil
+}
