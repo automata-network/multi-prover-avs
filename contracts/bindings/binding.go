@@ -161,16 +161,23 @@ func DecodeError(abi *abi.ABI, err error) error {
 	return logex.NewErrorf("%v: %v", je.Error(), errorData)
 }
 
-func ReportDataHash(reportData *TEELivenessVerifier.TEELivenessVerifierReportDataV2) (common.Hash, error) {
+func ReportDataBytes(reportData *TEELivenessVerifier.TEELivenessVerifierReportDataV2) ([]byte, error) {
 	method, ok := TEELivenessVerifierABI.Methods["submitLivenessProofV2"]
 	if !ok {
-		return common.Hash{}, logex.NewErrorf("method submitLivenessProofV2 not found in ABI")
+		return nil, logex.NewErrorf("method submitLivenessProofV2 not found in ABI")
 	}
 	args := abi.Arguments(method.Inputs[:1])
 	data, err := args.Pack(reportData)
 	if err != nil {
-		return common.Hash{}, logex.Trace(err, "PackReportDataV2")
+		return nil, logex.Trace(err, "PackReportDataV2")
 	}
+	return data, nil
+}
 
+func ReportDataHash(reportData *TEELivenessVerifier.TEELivenessVerifierReportDataV2) (common.Hash, error) {
+	data, err := ReportDataBytes(reportData)
+	if err != nil {
+		return common.Hash{}, logex.Trace(err)
+	}
 	return Keccak256(data), nil
 }

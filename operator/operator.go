@@ -413,6 +413,10 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 		if checkErr != nil {
 			return logex.Trace(err, "check balance")
 		}
+		if rdb, err := bindings.ReportDataBytes(&reportData); err == nil {
+			logex.Infof("attestation report userdata: 0x%x", rdb)
+		}
+		logex.Infof("attestation report data: 0x%x", report)
 		return logex.Trace(err, fmt.Sprintf("balance:%v", utils.WeiToF64(balance, 18)))
 	}
 	logex.Infof("submitted liveness proof: %v", tx.Hash())
