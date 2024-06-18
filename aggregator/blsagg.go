@@ -13,7 +13,7 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/chzyer/logex"
+	"github.com/automata-network/multi-prover-avs/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
@@ -21,7 +21,9 @@ var (
 	TaskAlreadyInitializedErrorFn = func(taskIndex types.TaskIndex) error {
 		return fmt.Errorf("task %d already initialized", taskIndex)
 	}
-	TaskExpiredError    = fmt.Errorf("task expired")
+	TaskExpiredError = func(taskIndex types.TaskIndex, threadholdInfo map[types.QuorumNum]ThresholdInfo) error {
+		return fmt.Errorf("task#%v expired: %+v", taskIndex, threadholdInfo)
+	}
 	TaskNotFoundErrorFn = func(taskIndex types.TaskIndex) error {
 		return fmt.Errorf("task %d not initialized or already completed", taskIndex)
 	}
@@ -133,7 +135,7 @@ var _ BlsAggregationService = (*BlsAggregatorService)(nil)
 
 func NewBlsAggregatorService(avsRegistryService avsregistry.AvsRegistryService, logger logging.Logger) *BlsAggregatorService {
 	return &BlsAggregatorService{
-		aggregatedResponsesC: make(chan BlsAggregationServiceResponse),
+		aggregatedResponsesC: make(chan BlsAggregationServiceResponse, 4),
 		signedTaskRespsCs:    make(map[types.TaskIndex]chan types.SignedTaskResponseDigest),
 		taskChansMutex:       sync.RWMutex{},
 		avsRegistryService:   avsRegistryService,
@@ -157,14 +159,19 @@ func (a *BlsAggregatorService) InitializeNewTask(
 	quorumThresholdPercentages types.QuorumThresholdPercentages,
 	timeToExpiry time.Duration,
 ) error {
-	a.logger.Debug("AggregatorService initializing new task", "taskIndex", taskIndex, "taskCreatedBlock", taskCreatedBlock, "quorumNumbers", quorumNumbers, "quorumThresholdPercentages", quorumThresholdPercentages, "timeToExpiry", timeToExpiry)
-	if _, taskExists := a.signedTaskRespsCs[taskIndex]; taskExists {
+	a.logger.Info("AggregatorService initializing new task", "taskIndex", taskIndex, "taskCreatedBlock", taskCreatedBlock, "quorumNumbers", quorumNumbers, "quorumThresholdPercentages", quorumThresholdPercentages, "timeToExpiry", timeToExpiry)
+
+	a.taskChansMutex.Lock()
+	signedTaskRespsC, taskExists := a.signedTaskRespsCs[taskIndex]
+	if !taskExists {
+		signedTaskRespsC = make(chan types.SignedTaskResponseDigest, 128)
+		a.signedTaskRespsCs[taskIndex] = signedTaskRespsC
+	}
+	a.taskChansMutex.Unlock()
+	if taskExists {
 		return TaskAlreadyInitializedErrorFn(taskIndex)
 	}
-	signedTaskRespsC := make(chan types.SignedTaskResponseDigest)
-	a.taskChansMutex.Lock()
-	a.signedTaskRespsCs[taskIndex] = signedTaskRespsC
-	a.taskChansMutex.Unlock()
+
 	go a.singleTaskAggregatorGoroutineFunc(taskIndex, taskCreatedBlock, quorumNumbers, quorumThresholdPercentages, timeToExpiry, signedTaskRespsC)
 	return nil
 }
@@ -176,6 +183,11 @@ func (a *BlsAggregatorService) ProcessNewSignature(
 	blsSignature *bls.Signature,
 	operatorId types.OperatorId,
 ) error {
+	start := time.Now()
+	defer func() {
+		a.logger.Info("AggregatorService process new signature", "taskIndex", taskIndex, "costTime", time.Since(start))
+	}()
+
 	a.taskChansMutex.Lock()
 	taskC, taskInitialized := a.signedTaskRespsCs[taskIndex]
 	a.taskChansMutex.Unlock()
@@ -216,12 +228,16 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	for i, quorumNumber := range quorumNumbers {
 		quorumThresholdPercentagesMap[quorumNumber] = quorumThresholdPercentages[i]
 	}
-	operatorsAvsStateDict, err := a.avsRegistryService.GetOperatorsAvsStateAtBlock(context.Background(), quorumNumbers, taskCreatedBlock)
+	operatorsAvsStateDict, err := utils.Retry(5, time.Second, func() (map[types.OperatorId]types.OperatorAvsState, error) {
+		return a.avsRegistryService.GetOperatorsAvsStateAtBlock(context.Background(), quorumNumbers, taskCreatedBlock)
+	}, "taskIndex", taskIndex, "taskCreatedBlock", taskCreatedBlock)
 	if err != nil {
 		// TODO: how should we handle such an error?
 		a.logger.Fatal("AggregatorService failed to get operators state from avs registry", "err", err, "blockNumber", taskCreatedBlock)
 	}
-	quorumsAvsStakeDict, err := a.avsRegistryService.GetQuorumsAvsStateAtBlock(context.Background(), quorumNumbers, taskCreatedBlock)
+	quorumsAvsStakeDict, err := utils.Retry(5, time.Second, func() (map[types.QuorumNum]types.QuorumAvsState, error) {
+		return a.avsRegistryService.GetQuorumsAvsStateAtBlock(context.Background(), quorumNumbers, taskCreatedBlock)
+	}, "taskIndex", taskIndex, "taskCreatedBlock", taskCreatedBlock)
 	if err != nil {
 		a.logger.Fatal("Aggregator failed to get quorums state from avs registry", "err", err)
 	}
@@ -239,10 +255,11 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	taskExpiredTimer := time.NewTimer(timeToExpiry)
 
 	aggregatedOperatorsDict := map[types.TaskResponseDigest]aggregatedOperators{}
+	var thresholdInfo map[types.QuorumNum]ThresholdInfo
 	for {
 		select {
 		case signedTaskResponseDigest := <-signedTaskRespsC:
-			a.logger.Debug("Task goroutine received new signed task response digest", "taskIndex", taskIndex, "signedTaskResponseDigest", signedTaskResponseDigest)
+			a.logger.Info("Task goroutine received new signed task response digest", "taskIndex", taskIndex, "signedTaskResponseDigest", signedTaskResponseDigest)
 			err := a.verifySignature(taskIndex, signedTaskResponseDigest, operatorsAvsStateDict)
 			signedTaskResponseDigest.SignatureVerificationErrorC <- err
 			if err != nil {
@@ -276,7 +293,8 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			// because of https://github.com/golang/go/issues/3117
 			aggregatedOperatorsDict[signedTaskResponseDigest.TaskResponseDigest] = digestAggregatedOperators
 
-			logex.Infof("new shares: signed: %v, total: %v, threshold: %v", digestAggregatedOperators.signersTotalStakePerQuorum, totalStakePerQuorum, quorumThresholdPercentagesMap)
+			thresholdInfo = formatThreshold(digestAggregatedOperators.signersTotalStakePerQuorum, totalStakePerQuorum, quorumThresholdPercentagesMap)
+			a.logger.Infof("shares update for taskIndex=%v: %+v", taskIndex, thresholdInfo)
 			if checkIfStakeThresholdsMet(a.logger, digestAggregatedOperators.signersTotalStakePerQuorum, totalStakePerQuorum, quorumThresholdPercentagesMap) {
 				nonSignersOperatorIds := []types.OperatorId{}
 				for operatorId := range operatorsAvsStateDict {
@@ -301,7 +319,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 				indices, err := a.avsRegistryService.GetCheckSignaturesIndices(&bind.CallOpts{}, taskCreatedBlock, quorumNumbers, nonSignersOperatorIds)
 				if err != nil {
 					a.aggregatedResponsesC <- BlsAggregationServiceResponse{
-						Err: types.WrapError(errors.New("Failed to get check signatures indices"), err),
+						Err: types.WrapError(errors.New("failed to get check signatures indices"), err),
 					}
 					return
 				}
@@ -323,7 +341,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			}
 		case <-taskExpiredTimer.C:
 			a.aggregatedResponsesC <- BlsAggregationServiceResponse{
-				Err: TaskExpiredError,
+				Err: TaskExpiredError(taskIndex, thresholdInfo),
 			}
 			return
 		}
@@ -336,6 +354,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 // so that the main thread knows that this task goroutine is no longer running
 // and doesn't try to send new signatures to it
 func (a *BlsAggregatorService) closeTaskGoroutine(taskIndex types.TaskIndex) {
+	a.logger.Infof("close task: %v", taskIndex)
 	a.taskChansMutex.Lock()
 	delete(a.signedTaskRespsCs, taskIndex)
 	a.taskChansMutex.Unlock()
@@ -377,6 +396,32 @@ func (a *BlsAggregatorService) verifySignature(
 		return IncorrectSignatureError
 	}
 	return nil
+}
+
+type ThresholdInfo struct {
+	Signed    *big.Int
+	Total     *big.Int
+	Threshold types.QuorumThresholdPercentage
+	Percent   *big.Float
+}
+
+func formatThreshold(signedStakePerQuorum map[types.QuorumNum]*big.Int,
+	totalStakePerQuorum map[types.QuorumNum]*big.Int,
+	quorumThresholdPercentagesMap map[types.QuorumNum]types.QuorumThresholdPercentage) map[types.QuorumNum]ThresholdInfo {
+
+	out := make(map[types.QuorumNum]ThresholdInfo)
+	for quorumNum, quorumThresholdPercentage := range quorumThresholdPercentagesMap {
+		info := ThresholdInfo{
+			Signed:    signedStakePerQuorum[quorumNum],
+			Total:     totalStakePerQuorum[quorumNum],
+			Threshold: quorumThresholdPercentage,
+		}
+		signed := new(big.Float).SetInt(info.Signed)
+		total := new(big.Float).SetInt(info.Total)
+		info.Percent = new(big.Float).Quo(signed, total)
+		out[quorumNum] = info
+	}
+	return out
 }
 
 // checkIfStakeThresholdsMet checks at least quorumThresholdPercentage of stake

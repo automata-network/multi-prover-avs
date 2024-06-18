@@ -59,6 +59,10 @@ func (a *AggregatorApi) FetchTask(ctx context.Context, req *FetchTaskReq) (*Fetc
 }
 
 func (a *AggregatorApi) fetchTask(ctx context.Context, req *FetchTaskReq) (*FetchTaskResp, error) {
+	if req.MaxWaitSecs > 30 {
+		req.MaxWaitSecs = 30
+	}
+
 	timeout := time.Duration(req.MaxWaitSecs) * time.Second
 	taskInfo, ok := a.agg.TaskManager.GetNextTask(ctx, req.TaskType, req.WithContext, int64(req.PrevTaskID), timeout)
 	if !ok {
@@ -84,15 +88,21 @@ func (a *AggregatorApi) SubmitTask(ctx context.Context, req *TaskRequest) error 
 		}
 	}()
 
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	if err := a.submitTask(ctx, req); err != nil {
 		logex.Error(err)
-		return err
+		return nil
 	}
 	return nil
 }
 
 func (a *AggregatorApi) submitTask(ctx context.Context, req *TaskRequest) error {
 	taskCtx := []string{fmt.Sprintf("id=%x", req.OperatorId)}
+	start := time.Now()
+	defer func() {
+		logex.Infof("SubmitTask cost time: %v, ctx=%v", time.Since(start), taskCtx)
+	}()
 	// check bls public key
 	digest, err := req.Task.Digest()
 	if err != nil {
@@ -105,7 +115,7 @@ func (a *AggregatorApi) submitTask(ctx context.Context, req *TaskRequest) error 
 	}
 	taskCtx = append(taskCtx, fmt.Sprintf("addr=%v", operatorAddr))
 
-	operatorPubkeys, err := a.agg.registry.GetOperatorsAvsStateAtBlock(ctx, utils.BytesToQuorumNums(req.Task.QuorumNumbers), req.Task.ReferenceBlockNumber)
+	operatorPubkeys, err := a.agg.registryCache.GetOperatorsAvsStateAtBlock(ctx, utils.BytesToQuorumNums(req.Task.QuorumNumbers), req.Task.ReferenceBlockNumber)
 	if err != nil {
 		return logex.Trace(err, taskCtx)
 	}

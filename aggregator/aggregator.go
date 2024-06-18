@@ -59,7 +59,7 @@ type Config struct {
 type Aggregator struct {
 	cfg *Config
 
-	blsAggregationService BlsAggregationService
+	blsAggregationService *BlsAggregatorService
 	transactOpt           *bind.TransactOpts
 
 	TaskManager *xtask.TaskManager
@@ -79,6 +79,8 @@ type Aggregator struct {
 	taskMutex    sync.Mutex
 	taskIndexSeq uint32
 	taskIndexMap map[types.TaskResponseDigest]*Task
+
+	registryCache *utils.RegistryCache
 }
 
 type Task struct {
@@ -156,7 +158,8 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		return nil, logex.Trace(err)
 	}
 	avsRegistryService := avsregistry.NewAvsRegistryServiceChainCaller(eigenClients.AvsRegistryChainReader, operatorPubkeysService, logger)
-	blsAggregationService := NewBlsAggregatorService(avsRegistryService, logger)
+	registryCache := utils.NewRegistryCache(avsRegistryService)
+	blsAggregationService := NewBlsAggregatorService(registryCache, logger)
 
 	registryCoordinator, err := RegistryCoordinator.NewRegistryCoordinator(cfg.AVSRegistryCoordinatorAddress, client)
 	if err != nil {
@@ -177,6 +180,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		TaskManager:           taskManager,
 		taskIndexMap:          make(map[types.Bytes32]*Task),
 		Collector:             collector,
+		registryCache:         registryCache,
 	}, nil
 }
 
@@ -186,7 +190,7 @@ func (agg *Aggregator) startUpdateOperators(ctx context.Context) (func() error, 
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
-	states, err := agg.registry.GetOperatorsAvsStateAtBlock(ctx, quorumNums, uint32(blockNumber))
+	states, err := agg.registryCache.GetOperatorsAvsStateAtBlock(ctx, quorumNums, uint32(blockNumber))
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -276,12 +280,6 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 
 	errChan := make(chan error)
 	go func() {
-		if err := xmetric.ExportMetricToOpenTelemetry(agg.cfg.OpenTelemetry, agg.Collector); err != nil {
-			errChan <- logex.Trace(err)
-		}
-	}()
-
-	go func() {
 		if err := agg.Collector.Serve(agg.cfg.EigenMetricsIpPortAddress); err != nil {
 			errChan <- logex.Trace(err)
 		}
@@ -341,6 +339,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 		quorumThresholdPercentages[i] = types.QuorumThresholdPercentage(agg.cfg.Threshold)
 	}
 	req.Task.QuorumThresholdPercentages = types.QuorumThresholdPercentages(quorumThresholdPercentages).UnderlyingType()
+	timeToExpiry := time.Duration(agg.cfg.TimeToExpirySecs) * time.Second
 
 	agg.taskMutex.Lock()
 	task, ok := agg.taskIndexMap[digest]
@@ -351,15 +350,13 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 		}
 		agg.taskIndexMap[digest] = task
 		agg.taskIndexSeq += 1
+
+		err = agg.blsAggregationService.InitializeNewTask(task.index, req.Task.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
 	}
 	agg.taskMutex.Unlock()
 
-	if !ok {
-		timeToExpiry := time.Duration(agg.cfg.TimeToExpirySecs) * time.Second
-		err = agg.blsAggregationService.InitializeNewTask(task.index, req.Task.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
-		if err != nil {
-			return logex.Trace(err)
-		}
+	if err != nil {
+		return logex.Trace(err)
 	}
 
 	if err := agg.blsAggregationService.ProcessNewSignature(ctx, task.index, digest, req.Signature, req.OperatorId); err != nil {

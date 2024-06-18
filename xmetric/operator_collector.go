@@ -9,6 +9,8 @@ type OperatorCollector struct {
 	SubmitTask        *prometheus.CounterVec
 	LatestTask        *prometheus.GaugeVec
 	ProcessTaskMs     *prometheus.GaugeVec
+	GenPoeMs          *prometheus.GaugeVec
+	SubmitTaskMs      *prometheus.GaugeVec
 	GenReportMs       *prometheus.GaugeVec
 	LivenessTs        *prometheus.GaugeVec
 	NextAttestationTs *prometheus.GaugeVec
@@ -65,6 +67,24 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 				Subsystem: LabelOperator,
 				Name:      "process_task_ms_gauge",
 				Help:      "The time it takes to process the task in milliseconds",
+			},
+			[]string{"avs_name", "type"},
+		)),
+		GenPoeMs: collect(&metrics, prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: app,
+				Subsystem: LabelOperator,
+				Name:      "gen_poe_ms_gauge",
+				Help:      "The time it takes to generate poe in milliseconds",
+			},
+			[]string{"avs_name", "type"},
+		)),
+		SubmitTaskMs: collect(&metrics, prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: app,
+				Subsystem: LabelOperator,
+				Name:      "submit_task_ms_gauge",
+				Help:      "The time it takes to submit task in milliseconds",
 			},
 			[]string{"avs_name", "type"},
 		)),

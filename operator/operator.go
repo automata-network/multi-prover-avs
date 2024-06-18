@@ -270,10 +270,13 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 		}
 	}
 
+	genPoeStart := time.Now()
 	poe, skip, err := o.proverClient.GetPoeByPob(ctx, o.operatorAddress, ext.BatchData, taskCtx)
 	if err != nil {
 		return logex.Trace(err)
 	}
+	o.operatorMetric.GenPoeMs.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(time.Since(genPoeStart).Milliseconds()))
+
 	logex.Pretty(poe)
 	if skip {
 		return nil
@@ -305,6 +308,7 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	sig := o.cfg.BlsKey.SignMessage(digest)
 
 	o.operatorMetric.SubmitTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Add(1)
+	submitTaskTime := time.Now()
 	// submit to aggregator
 	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
 		Task:       stateHeader,
@@ -313,6 +317,7 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	}); err != nil {
 		return logex.Trace(err)
 	}
+	o.operatorMetric.SubmitTaskMs.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(time.Since(submitTaskTime).Milliseconds()))
 	// logex.Info(poe)
 	return nil
 }
@@ -417,8 +422,13 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 			logex.Infof("attestation report userdata: 0x%x", rdb)
 		}
 		logex.Infof("attestation report data: 0x%x", report)
-		return logex.Trace(err, fmt.Sprintf("balance:%v", utils.WeiToF64(balance, 18)))
+		return logex.Trace(
+			err,
+			fmt.Sprintf("balance:%.2f", utils.WeiToF64(balance, 18)),
+			fmt.Sprintf("verifierAddr:%v", o.cfg.Config.TEELivenessVerifierAddress),
+		)
 	}
+
 	logex.Infof("submitted liveness proof: %v", tx.Hash())
 	receipt, err := utils.WaitTx(ctx, o.cfg.AttestationClient, tx, nil)
 	if err != nil {
