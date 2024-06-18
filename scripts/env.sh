@@ -10,7 +10,8 @@ function _script() {
 		NOSEND=""
 	fi
 	cd $WORKDIR
-	forge script "$@" -v $NOSEND --rpc-url $(_get_env RPC_URL) --private-key $PRIVATE_KEY
+	# ETH_GAS_PRICE=0.1gwei
+	forge script "$@" -v $NOSEND --rpc-url $(_get_env RPC_URL) --private-key $(_get_env $DEPLOY_KEY_SUFFIX)
 	cd -
 }
 

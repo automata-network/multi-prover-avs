@@ -18,6 +18,7 @@ function deploy() {
     MAX_BLOCK_NUMBER_DIFF=$(_get_env "MAX_BLOCK_NUMBER_DIFF") \
     VERSION=$2 \
     ATTEST_VALIDITY_SECS=$3 \
+    DEPLOY_KEY_SUFFIX=TEE_DEPLOY_KEY \
     ENV=$ENV \
     _script script/DeployTEELivenessService.s.sol --sig $1'()'
 
