@@ -274,7 +274,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 					signersApkG2:               bls.NewZeroG2Point().Add(operatorsAvsStateDict[signedTaskResponseDigest.OperatorId].Pubkeys.G2Pubkey),
 					signersAggSigG1:            signedTaskResponseDigest.BlsSignature,
 					signersOperatorIdsSet:      map[types.OperatorId]bool{signedTaskResponseDigest.OperatorId: true},
-					signersTotalStakePerQuorum: operatorsAvsStateDict[signedTaskResponseDigest.OperatorId].StakePerQuorum,
+					signersTotalStakePerQuorum: cloneStakePerQuorumMap(operatorsAvsStateDict[signedTaskResponseDigest.OperatorId].StakePerQuorum),
 				}
 			} else {
 				digestAggregatedOperators.signersAggSigG1.Add(signedTaskResponseDigest.BlsSignature)
@@ -460,4 +460,12 @@ func checkIfStakeThresholdsMet(
 		}
 	}
 	return true
+}
+
+func cloneStakePerQuorumMap(stakes map[types.QuorumNum]types.StakeAmount) map[types.QuorumNum]types.StakeAmount {
+	out := make(map[types.QuorumNum]types.StakeAmount, len(stakes))
+	for k, v := range stakes {
+		out[k] = new(big.Int).Set(v)
+	}
+	return out
 }

@@ -393,7 +393,7 @@ func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, tas
 
 	tx, err := agg.multiProverContract.ConfirmState(agg.transactOpt, *task.state.Task.ToAbi(), nonSignerStakesAndSignature)
 	if err != nil {
-		return logex.Trace(err)
+		return logex.Trace(bindings.MultiProverError(err))
 	}
 	logex.Pretty(task.state.Task)
 	logex.Infof("confirm state: %v", tx.Hash())

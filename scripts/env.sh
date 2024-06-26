@@ -53,7 +53,7 @@ echo "RPC_URL: $(_get_env RPC_URL)"
 echo "=============================================================="
 echo
 
-AVS_DEPLOY=contracts/script/output/avs_deploy_output.json
+AVS_DEPLOY=contracts/script/output/avs_deploy_$ENV.json
 TEE_DEPLOY=contracts/script/output/tee_deploy_output_$ENV.json
 EIGENLAYER_DEPLOY=contracts/script/output/eigenlayer_holesky_deploy.json
 PRIVATE_KEY=$(_get_env DEPLOY_KEY)
