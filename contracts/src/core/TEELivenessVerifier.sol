@@ -32,26 +32,38 @@ contract TEELivenessVerifier is OwnableUpgradeable {
     // added at v2
     uint256 public maxBlockNumberDiff;
 
-
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address _initialOwner, address _attestationAddr, uint256 _maxBlockNumberDiff, uint256 _attestValiditySeconds) public initializer {
+    function initialize(
+        address _initialOwner,
+        address _attestationAddr,
+        uint256 _maxBlockNumberDiff,
+        uint256 _attestValiditySeconds
+    ) public initializer {
         dcapAttestation = IAttestation(_attestationAddr);
         maxBlockNumberDiff = _maxBlockNumberDiff;
         attestValiditySeconds = _attestValiditySeconds;
         _transferOwnership(_initialOwner);
     }
 
-    function reinitialize(uint8 i, address _initialOwner, address _attestationAddr, uint256 _maxBlockNumberDiff, uint256 _attestValiditySeconds) public reinitializer(i) {
+    function reinitialize(
+        uint8 i,
+        address _initialOwner,
+        address _attestationAddr,
+        uint256 _maxBlockNumberDiff,
+        uint256 _attestValiditySeconds
+    ) public reinitializer(i) {
         dcapAttestation = IAttestation(_attestationAddr);
         maxBlockNumberDiff = _maxBlockNumberDiff;
         attestValiditySeconds = _attestValiditySeconds;
         _transferOwnership(_initialOwner);
     }
 
-    function changeMaxBlockNumberDiff(uint256 _maxBlockNumberDiff) public onlyOwner {
+    function changeMaxBlockNumberDiff(
+        uint256 _maxBlockNumberDiff
+    ) public onlyOwner {
         maxBlockNumberDiff = _maxBlockNumberDiff;
     }
 
@@ -89,7 +101,9 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         require(dataHash == reportDataHash, "report data hash mismatch");
 
         Prover memory prover = Prover(_data.pubkey, block.timestamp);
-        attestedProvers[keccak256(abi.encode(_data.pubkey.x, _data.pubkey.y))] = prover;
+        attestedProvers[
+            keccak256(abi.encode(_data.pubkey.x, _data.pubkey.y))
+        ] = prover;
         attestedReports[reportHash] = true;
     }
 
@@ -136,11 +150,15 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         return (x, y);
     }
 
-    // this function will make sure the attestation report
-    function checkBlockNumber(uint256 blockNumber, bytes32 blockHash) private view {
+    // this function will make sure the attestation report generated in recent ${maxBlockNumberDiff} blocks
+    function checkBlockNumber(
+        uint256 blockNumber,
+        bytes32 blockHash
+    ) private view {
+        require(blockNumber < block.number, "invalid block number");
         require(
-            blockNumber < block.number && block.number - blockNumber < maxBlockNumberDiff,
-            "invalid block number"
+            block.number - blockNumber < maxBlockNumberDiff,
+            "block number out-of-date"
         );
 
         require(blockhash(blockNumber) == blockHash, "block number mismatch");

@@ -33,6 +33,7 @@ import (
 type Config struct {
 	ListenAddr       string
 	TimeToExpirySecs int
+	MinWaitSecs      int
 
 	EcdsaPrivateKey                      string
 	EthHttpEndpoint                      string
@@ -49,11 +50,27 @@ type Config struct {
 	Threshold                     uint64
 	Sampling                      uint64
 
+	GenTaskSampling  uint64
+	ExecTaskSampling uint64
+
 	OpenTelemetry *xmetric.OpenTelemetryConfig
 
 	TaskFetcher []*xtask.TaskManagerConfig
 
 	Simulation bool
+}
+
+func (cfg *Config) Init() error {
+	if cfg.Sampling == 0 {
+		cfg.Sampling = 2000
+	}
+	if cfg.ExecTaskSampling == 0 {
+		cfg.ExecTaskSampling = cfg.Sampling
+	}
+	if cfg.GenTaskSampling == 0 {
+		cfg.GenTaskSampling = cfg.Sampling
+	}
+	return nil
 }
 
 type Aggregator struct {
@@ -89,9 +106,10 @@ type Task struct {
 }
 
 func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
-	if cfg.Sampling == 0 {
-		cfg.Sampling = 2000
+	if err := cfg.Init(); err != nil {
+		return nil, logex.Trace(err)
 	}
+
 	logex.Info("Multi Prover Aggregator Initializing...")
 	ecdsaPrivateKey, err := crypto.HexToECDSA(cfg.EcdsaPrivateKey)
 	if err != nil {
@@ -148,7 +166,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 
 	collector := xmetric.NewAggregatorCollector("avs")
 
-	taskManager, err := xtask.NewTaskManager(collector, int64(cfg.Sampling), eigenClients.EthHttpClient, cfg.TaskFetcher)
+	taskManager, err := xtask.NewTaskManager(collector, int64(cfg.GenTaskSampling), eigenClients.EthHttpClient, cfg.TaskFetcher)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -321,7 +339,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 			return logex.Trace(err)
 		}
 		if md.BatchId > 0 {
-			if md.BatchId%agg.cfg.Sampling != 0 {
+			if md.BatchId%agg.cfg.ExecTaskSampling != 0 {
 				logex.Infof("[scroll] skip task: %#v", md)
 				return nil
 			}
@@ -340,6 +358,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 	}
 	req.Task.QuorumThresholdPercentages = types.QuorumThresholdPercentages(quorumThresholdPercentages).UnderlyingType()
 	timeToExpiry := time.Duration(agg.cfg.TimeToExpirySecs) * time.Second
+	minWait := time.Duration(agg.cfg.MinWaitSecs) * time.Second
 
 	agg.taskMutex.Lock()
 	task, ok := agg.taskIndexMap[digest]
@@ -351,7 +370,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 		agg.taskIndexMap[digest] = task
 		agg.taskIndexSeq += 1
 
-		err = agg.blsAggregationService.InitializeNewTask(task.index, req.Task.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, timeToExpiry)
+		err = agg.blsAggregationService.InitializeNewTask(ctx, task.index, req.Task.ReferenceBlockNumber, quorumNumbers, quorumThresholdPercentages, minWait, timeToExpiry)
 	}
 	agg.taskMutex.Unlock()
 
@@ -367,7 +386,7 @@ func (agg *Aggregator) submitStateHeader(ctx context.Context, req *TaskRequest) 
 	return nil
 }
 
-func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, task *Task, blsAggServiceResp BlsAggregationServiceResponse) error {
+func (agg *Aggregator) sendAggregatedResponseToContract(ctx context.Context, task *Task, blsAggServiceResp *BlsAggregationServiceResponse) error {
 	if blsAggServiceResp.Err != nil {
 		return logex.Trace(blsAggServiceResp.Err)
 	}

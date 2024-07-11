@@ -17,3 +17,6 @@ docs/
 config/
 .DS_Store
 /bin
+contracts/script/output/avs_deploy_localhost.json
+contracts/script/output/tee_deploy_output_localhost.json
+scripts/deploy.sh

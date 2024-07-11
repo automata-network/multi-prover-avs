@@ -21,6 +21,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	sdkTypes "github.com/Layr-Labs/eigensdk-go/types"
 )
 
 type TaskType int
@@ -28,16 +30,52 @@ type TaskType int
 const (
 	MinTaskType TaskType = 0
 	ScrollTask  TaskType = 1
-	MaxTaskType TaskType = 2
+	LineaTask   TaskType = 2
+	MaxTaskType TaskType = 3
 )
+
+func GetQuorumNames() map[sdkTypes.QuorumNum]string {
+	return map[sdkTypes.QuorumNum]string{
+		0: "Scroll SGX Quorum",
+		1: "Linea SGX Quorum",
+	}
+}
+
+func NewTaskType(quorum byte) TaskType {
+	switch quorum {
+	case 0:
+		return ScrollTask
+	case 1:
+		return LineaTask
+	default:
+		return MaxTaskType
+	}
+}
+
+func (t TaskType) GetQuorum() byte {
+	switch t {
+	case ScrollTask:
+		return 0
+	case LineaTask:
+		return 1
+	default:
+		panic(fmt.Sprintf("unknown task type: %v", t))
+	}
+}
 
 func (t TaskType) Value() string {
 	switch t {
 	case ScrollTask:
 		return "scroll"
+	case LineaTask:
+		return "linea"
 	default:
 		return fmt.Sprint(int(t))
 	}
+}
+
+func (t TaskType) IsValid() bool {
+	return t > MinTaskType && t < MaxTaskType
 }
 
 var (
@@ -54,6 +92,7 @@ type TaskManagerConfig struct {
 	Topics    [][]common.Hash
 	Addresses []common.Address
 	// OffsetFile       string
+	PresetStartBlock uint64
 	ScanIntervalSecs int64
 }
 
@@ -71,9 +110,10 @@ type TaskManager struct {
 	collector       *xmetric.AggregatorCollector
 	referenceClient eth.Client
 
-	tasksMutex       sync.Mutex
-	tasks            map[TaskType]*TaskTuple
-	presetStartBlock uint64
+	tasksMutex sync.Mutex
+	tasks      map[TaskType]*TaskTuple
+
+	lineaPrevLog *types.Log
 }
 
 type TaskTuple struct {
@@ -93,14 +133,13 @@ func NewTaskManager(collector *xmetric.AggregatorCollector, sampling int64, refe
 	tracers := make(map[TaskType]*utils.LogTracer)
 	contexts := make(map[TaskType]*TaskContext)
 	tm := &TaskManager{
-		sampling:         sampling,
-		sources:          sources,
-		tracers:          tracers,
-		contexts:         contexts,
-		collector:        collector,
-		referenceClient:  referenceClient,
-		presetStartBlock: 0, //19976077,
-		tasks:            make(map[TaskType]*TaskTuple, MaxTaskType),
+		sampling:        sampling,
+		sources:         sources,
+		tracers:         tracers,
+		contexts:        contexts,
+		collector:       collector,
+		referenceClient: referenceClient,
+		tasks:           make(map[TaskType]*TaskTuple, MaxTaskType),
 	}
 
 	for _, cfg := range tasks {
@@ -138,28 +177,31 @@ func NewTaskManager(collector *xmetric.AggregatorCollector, sampling int64, refe
 		}
 
 		tracers[cfg.Identifier] = utils.NewLogTracer(source, &utils.LogTracerConfig{
-			Id:               fmt.Sprintf("aggregator-task-fetcher-%v", cfg.Identifier),
+			Id:               fmt.Sprintf("aggregator-task-fetcher-%v", cfg.Identifier.Value()),
 			Wait:             5,
 			Max:              100,
 			Topics:           cfg.Topics,
 			Addresses:        cfg.Addresses,
 			ScanIntervalSecs: cfg.ScanIntervalSecs,
 			SkipOnError:      true,
-			Handler:          tm,
+			Handler:          handlerWrapper(cfg.PresetStartBlock, tm),
 		})
 	}
 
 	return tm, nil
 }
 
-func (t *TaskManager) OnNewLog(ctx context.Context, log *types.Log) error {
+func (t *TaskManager) OnNewLog(ctx context.Context, id TaskType, log *types.Log) error {
 	source := utils.KeyLogTracerSourceClient{}.Get(ctx)
-	id := ctx.Value(TaskManagerId{}).(TaskType)
 	t.collector.NewTask.WithLabelValues(id.Value()).Add(1)
 
 	switch id {
 	case ScrollTask:
 		if err := t.onScrollTask(ctx, source, log); err != nil {
+			return logex.Trace(err)
+		}
+	case LineaTask:
+		if err := t.onLineaTask(ctx, source, log); err != nil {
 			return logex.Trace(err)
 		}
 	default:
@@ -228,9 +270,73 @@ func (t *TaskManager) updateTask(taskInfo TaskInfo) {
 	chs := taskTuple.Channels
 	taskTuple.Channels = nil
 	t.tasksMutex.Unlock()
+	logex.Infof("[%v] notify %v clients", taskInfo.Type.Value(), len(chs))
 	for _, ch := range chs {
 		close(ch)
 	}
+}
+
+func (t *TaskManager) onLineaTask(ctx context.Context, _ *ethclient.Client, log *types.Log) error {
+	prover := ctx.Value(TaskManagerProverClient{}).(*ProverClient)
+	referenceBlockNumber, err := t.referenceClient.BlockNumber(ctx)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	prevLog := t.lineaPrevLog
+	if prevLog == nil || prevLog.Topics[3] != log.Topics[2] {
+		tracer := utils.KeyLogTracer{}.Get(ctx)
+		prevLog, err = tracer.LookBack(ctx, int64(log.BlockNumber))
+		if err != nil {
+			return logex.Trace(err)
+		}
+		if prevLog.Topics[3] != log.Topics[2] {
+			return logex.NewErrorf("Batches are not sequential: prev[%v], current[%v]", prevLog.TxHash, log.TxHash)
+		}
+	}
+
+	startBlock := new(big.Int).SetBytes(prevLog.Topics[1][:]).Int64() + 1
+	endBlock := new(big.Int).SetBytes(log.Topics[1][:]).Int64()
+	batchId := endBlock // can't determine the batch, so we use the end block number
+
+	logex.Infof("generating task[linea] for #%v, refblk: %v", batchId, referenceBlockNumber)
+
+	taskInfo := &TaskInfo{
+		Type:   LineaTask,
+		TaskID: batchId,
+	}
+	taskInfo.Ext, err = json.Marshal(LineaTaskExt{
+		StartBlock:              (*hexutil.Big)(big.NewInt(startBlock)),
+		EndBlock:                (*hexutil.Big)(big.NewInt(endBlock)),
+		CommitTx:                log.TxHash,
+		PrevCommitTx:            prevLog.TxHash,
+		ReferenceBlockNumber:    referenceBlockNumber - 1,
+		PrevBatchFinalStateRoot: log.Topics[2],
+		FinalStateRoot:          log.Topics[3],
+	})
+	if err != nil {
+		return logex.Trace(err)
+	}
+
+	startGenerateContext := time.Now()
+	taskCtx, ignore, err := prover.GenerateLineaContext(ctx, startBlock, endBlock, taskInfo.Type)
+	if ignore {
+		return nil
+	}
+	if err != nil {
+		return logex.Trace(err, fmt.Sprintf("fetching context for scroll batchId#%v", batchId))
+	}
+	generateContextCost := time.Since(startGenerateContext).Truncate(time.Millisecond)
+
+	taskInfo.Context, err = json.Marshal(taskCtx)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	t.updateTask(*taskInfo)
+	logex.Infof("update task: [%v] %v, (generateContext:%v)", taskInfo.Type.Value(), taskInfo.TaskID, generateContextCost)
+	time.Sleep(10 * time.Second)
+	t.lineaPrevLog = log
+
+	return nil
 }
 
 func (t *TaskManager) onScrollTask(ctx context.Context, source *ethclient.Client, log *types.Log) error {
@@ -247,6 +353,8 @@ func (t *TaskManager) onScrollTask(ctx context.Context, source *ethclient.Client
 			return nil
 		}
 	}
+
+	logex.Infof("generating task[scroll] for #%v, refblk: %v", batchId, referenceBlockNumber)
 
 	taskInfo := &TaskInfo{
 		Type:   ScrollTask,
@@ -290,7 +398,7 @@ func (t *TaskManager) onScrollTask(ctx context.Context, source *ethclient.Client
 	t.updateTask(*taskInfo)
 
 	startGenerateContext := time.Now()
-	taskCtx, ignore, err := prover.GenerateContext(ctx, startBlock, endBlock, taskInfo.Type)
+	taskCtx, ignore, err := prover.GenerateScrollContext(ctx, startBlock, endBlock, taskInfo.Type)
 	if ignore {
 		return nil
 	}
@@ -312,12 +420,26 @@ func (t *TaskManager) onScrollTask(ctx context.Context, source *ethclient.Client
 	return nil
 }
 
-func (t *TaskManager) SaveBlock(uint64) error {
+type LogHandlerWrapper struct {
+	presetBlock uint64
+	t           *TaskManager
+}
+
+func handlerWrapper(presetBlock uint64, t *TaskManager) *LogHandlerWrapper {
+	return &LogHandlerWrapper{presetBlock, t}
+}
+
+func (w *LogHandlerWrapper) SaveBlock(uint64) error {
 	return nil
 }
 
-func (t *TaskManager) GetBlock() (uint64, error) {
-	return t.presetStartBlock, nil
+func (w *LogHandlerWrapper) GetBlock() (uint64, error) {
+	return w.presetBlock, nil
+}
+
+func (w *LogHandlerWrapper) OnNewLog(ctx context.Context, log *types.Log) error {
+	id := ctx.Value(TaskManagerId{}).(TaskType)
+	return w.t.OnNewLog(ctx, id, log)
 }
 
 func (t *TaskManager) Run(ctx context.Context) error {

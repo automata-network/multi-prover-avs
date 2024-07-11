@@ -83,6 +83,7 @@ func (a *AggregatorApi) fetchTask(ctx context.Context, req *FetchTaskReq) (*Fetc
 func (a *AggregatorApi) SubmitTask(ctx context.Context, req *TaskRequest) error {
 	defer func() {
 		if err := recover(); err != nil {
+			logex.Pretty(req)
 			logex.Error(err, string(debug.Stack()))
 			panic(err)
 		}
@@ -108,6 +109,7 @@ func (a *AggregatorApi) submitTask(ctx context.Context, req *TaskRequest) error 
 	if err != nil {
 		return logex.Trace(err, taskCtx)
 	}
+	taskCtx = append(taskCtx, fmt.Sprintf("digest=%x", digest))
 
 	operatorAddr, err := bindings.GetOperatorAddrByOperatorID(a.agg.client, a.agg.registryCoordinator, req.OperatorId)
 	if err != nil {
