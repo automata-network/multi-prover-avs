@@ -104,7 +104,7 @@ func (p *ProverClient) DaPutPob(ctx context.Context, taskCtx *ScrollContext) err
 	return nil
 }
 
-func (p *ProverClient) GenerateContext(ctx context.Context, startBlock, endBlock int64, ty TaskType) (*ScrollContext, bool, error) {
+func (p *ProverClient) GenerateScrollContext(ctx context.Context, startBlock, endBlock int64, ty TaskType) (*ScrollContext, bool, error) {
 	var result ScrollContext
 	retryTime := 3
 	var err error
@@ -118,6 +118,29 @@ retry:
 			goto retry
 		}
 		if strings.Contains(err.Error(), "skip") {
+			logex.Errorf("skip error for generate context (%v, %v, %v): %v", startBlock, endBlock, ty.Value(), err)
+			return nil, true, nil
+		}
+		return nil, false, logex.Trace(err, "prover_genContext")
+	}
+	return &result, false, nil
+}
+
+func (p *ProverClient) GenerateLineaContext(ctx context.Context, startBlock, endBlock int64, ty TaskType) (*ScrollContext, bool, error) {
+	var result ScrollContext
+	retryTime := 3
+	var err error
+retry:
+	if retryTime == 0 {
+		return nil, false, logex.Trace(err)
+	}
+	err = p.client.CallContext(ctx, &result, "prover_genContext", startBlock, endBlock, ty)
+	if err != nil {
+		if strings.Contains(err.Error(), "unexpected EOF") {
+			goto retry
+		}
+		if strings.Contains(err.Error(), "skip") {
+			logex.Errorf("skip error for generate context (%v, %v): %v", startBlock, endBlock, err)
 			return nil, true, nil
 		}
 		return nil, false, logex.Trace(err, "prover_genContext")
@@ -126,8 +149,22 @@ retry:
 }
 
 type ProverMetadata struct {
-	WithContext bool   `json:"with_context"`
-	Version     string `json:"version"`
+	WithContext     bool            `json:"with_context"`
+	TaskWithContext map[uint64]bool `json:"task_with_context"`
+	Version         string          `json:"version"`
+}
+
+func (md *ProverMetadata) GetWithContext(ty TaskType) bool {
+	withContext := true
+	if ty == ScrollTask {
+		withContext = md.WithContext
+	}
+	if md.TaskWithContext != nil {
+		if wc, ok := md.TaskWithContext[uint64(ty)]; ok {
+			withContext = wc
+		}
+	}
+	return withContext
 }
 
 func (p *ProverClient) Metadata(ctx context.Context) (*ProverMetadata, error) {
@@ -139,9 +176,54 @@ func (p *ProverClient) Metadata(ctx context.Context) (*ProverMetadata, error) {
 }
 
 type ProveTaskParams struct {
-	Batch   hexutil.Bytes  `json:"batch"`
-	PobHash common.Hash    `json:"pob_hash"`
-	From    common.Address `json:"from"`
+	Batch    hexutil.Bytes  `json:"batch,omitempty"`
+	PobHash  common.Hash    `json:"pob_hash"`
+	From     common.Address `json:"from"`
+	TaskType uint64         `json:"task_type,omitempty"`
+
+	Start             uint64      `json:"start,omitempty"`
+	End               uint64      `json:"end,omitempty"`
+	StartingStateRoot common.Hash `json:"starting_state_root,omitempty"`
+	FinalStateRoot    common.Hash `json:"final_state_root,omitempty"`
+}
+
+func (p *ProverClient) ProveLinea(ctx context.Context, from common.Address, ext *LineaTaskExt, taskCtx *ScrollContext) (*PoeResponse, bool, error) {
+	lockResult, err := p.DaTryLock(ctx, taskCtx.Hash)
+	if err != nil {
+		return nil, false, logex.Trace(err)
+	}
+
+	if lockResult == "Locked" {
+		logex.Info("uploading pob")
+		if err := p.DaPutPob(ctx, taskCtx); err != nil {
+			return nil, false, logex.Trace(err)
+		}
+	}
+
+	params := ProveTaskParams{
+		Batch:             nil,
+		PobHash:           taskCtx.Hash,
+		From:              from,
+		TaskType:          uint64(LineaTask),
+		Start:             ext.StartBlock.ToInt().Uint64(),
+		End:               ext.EndBlock.ToInt().Uint64(),
+		StartingStateRoot: ext.PrevBatchFinalStateRoot,
+		FinalStateRoot:    ext.FinalStateRoot,
+	}
+	for {
+		var result *PoeResponse
+		if err := p.client.CallContext(ctx, &result, "prover_proveTask", params); err != nil {
+			if strings.Contains(err.Error(), "skip") {
+				return nil, true, nil
+			}
+			return nil, false, logex.Trace(err, "getPoe")
+		}
+		if result.NotReady {
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		return result, false, nil
+	}
 }
 
 func (p *ProverClient) GetPoeByPob(ctx context.Context, from common.Address, batchData []byte, taskCtx *ScrollContext) (*PoeResponse, bool, error) {

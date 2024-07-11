@@ -9,10 +9,10 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/nodeapi"
-	sdkTypes "github.com/Layr-Labs/eigensdk-go/types"
 
 	"github.com/automata-network/multi-prover-avs/aggregator"
 	"github.com/automata-network/multi-prover-avs/contracts/bindings"
@@ -81,13 +81,8 @@ func NewOperator(path string, semVer string) (*Operator, error) {
 		return nil, logex.NewErrorf("operator is not registered")
 	}
 
-	quorumNames := map[sdkTypes.QuorumNum]string{
-		0: "Scroll SGX Quorum",
-	}
-	quorumNumbers := []byte{0}
-
 	operatorMetric := xmetric.NewOperatorCollector("avs", cfg.EigenClients.PrometheusRegistry)
-	metrics := NewMetrics(cfg.AvsName, cfg.EigenClients, logger, operatorAddress, cfg.Config.EigenMetricsIpPortAddress, quorumNames)
+	metrics := NewMetrics(cfg.AvsName, cfg.EigenClients, logger, operatorAddress, cfg.Config.EigenMetricsIpPortAddress, xtask.GetQuorumNames())
 
 	nodeApi := nodeapi.NewNodeApi(cfg.AvsName, semVer, cfg.Config.NodeApiIpPortAddress, logger)
 
@@ -97,7 +92,6 @@ func NewOperator(path string, semVer string) (*Operator, error) {
 		semVer:              semVer,
 		proverClient:        proverClient,
 		logger:              logger,
-		quorumNumbers:       quorumNumbers,
 		aggregator:          aggClient,
 		operatorAddress:     operatorAddress,
 		metrics:             metrics,
@@ -138,15 +132,27 @@ func (o *Operator) Start(ctx context.Context) error {
 		o.operatorAddress,
 		o.cfg.BlsKey.GetPubKeyG1(),
 		o.cfg.BlsKey.GetPubKeyG2(),
-		md.Version, md.WithContext,
+		md.Version, md.TaskWithContext,
 	)
 
 	go o.metricExporterLoop(ctx)
 	go o.metadataExport(ctx)
 
-	if err := o.subscribeTask(ctx, md.WithContext); err != nil {
-		return logex.Trace(err)
+	var wg sync.WaitGroup
+	for _, quorum := range o.quorumNumbers {
+		ty := xtask.NewTaskType(quorum)
+		if !ty.IsValid() {
+			logex.Errorf("unknown quorum: %v", quorum)
+			continue
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			o.subscribeTask(ctx, ty, md.GetWithContext(ty))
+		}()
+
 	}
+	wg.Wait()
 
 	return nil
 }
@@ -175,6 +181,8 @@ func (o *Operator) metadataExport(ctx context.Context) {
 			proverUrlHash.String(),
 			proverVersion,
 			fmt.Sprint(proverWithContext),
+			fmt.Sprint(md.GetWithContext(xtask.ScrollTask)),
+			fmt.Sprint(md.GetWithContext(xtask.LineaTask)),
 		).Add(1)
 
 	}
@@ -185,15 +193,15 @@ func (o *Operator) metadataExport(ctx context.Context) {
 	}
 }
 
-func (o *Operator) subscribeTask(ctx context.Context, withContext bool) error {
+func (o *Operator) subscribeTask(ctx context.Context, ty xtask.TaskType, withContext bool) {
 	req := &aggregator.FetchTaskReq{
 		PrevTaskID:  0,
-		TaskType:    xtask.ScrollTask,
+		TaskType:    ty,
 		MaxWaitSecs: 100,
 		WithContext: withContext,
 	}
 	for {
-		logex.Infof("fetch task: %#v", req)
+		logex.Infof("fetch task[%v]: %#v", ty.Value(), req)
 		resp, err := o.aggregator.FetchTask(ctx, req)
 		if err != nil {
 			time.Sleep(time.Second)
@@ -207,8 +215,8 @@ func (o *Operator) subscribeTask(ctx context.Context, withContext bool) error {
 		logex.Infof("accept new task: [%v] %v", resp.TaskType.Value(), resp.TaskID)
 		req.PrevTaskID = resp.TaskID
 
-		o.operatorMetric.FetchTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value(), fmt.Sprint(req.WithContext)).Add(1)
-		o.operatorMetric.LatestTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(resp.TaskID))
+		o.operatorMetric.FetchTask.WithLabelValues(o.cfg.AvsName, ty.Value(), fmt.Sprint(req.WithContext)).Add(1)
+		o.operatorMetric.LatestTask.WithLabelValues(o.cfg.AvsName, ty.Value()).Set(float64(resp.TaskID))
 
 		startProcessTask := time.Now()
 		switch resp.TaskType {
@@ -216,8 +224,12 @@ func (o *Operator) subscribeTask(ctx context.Context, withContext bool) error {
 			if err := o.processScrollTask(ctx, resp); err != nil {
 				logex.Error(err)
 			}
+		case xtask.LineaTask:
+			if err := o.processLineaTask(ctx, resp); err != nil {
+				logex.Error(err)
+			}
 		}
-		o.operatorMetric.ProcessTaskMs.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(time.Since(startProcessTask).Milliseconds()))
+		o.operatorMetric.ProcessTaskMs.WithLabelValues(o.cfg.AvsName, ty.Value()).Set(float64(time.Since(startProcessTask).Milliseconds()))
 	}
 }
 
@@ -248,16 +260,17 @@ func (o *Operator) metricExporterLoop(ctx context.Context) {
 	}
 }
 
-func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.FetchTaskResp) (err error) {
-	var ext xtask.ScrollTaskExt
+func (o *Operator) processLineaTask(ctx context.Context, resp *aggregator.FetchTaskResp) (err error) {
+	ty := xtask.LineaTask
+	var ext xtask.LineaTaskExt
 	if err := json.Unmarshal(resp.Ext, &ext); err != nil {
 		return logex.Trace(err)
 	}
 	var taskCtx *xtask.ScrollContext
 	if len(resp.Context) == 0 {
-		logex.Info("[scroll] generating task context for:", ext.StartBlock.ToInt(), ext.EndBlock.ToInt())
+		logex.Info("[linea] generating task context for:", ext.StartBlock.ToInt(), ext.EndBlock.ToInt())
 		var skip bool
-		taskCtx, skip, err = o.proverClient.GenerateContext(ctx, ext.StartBlock.ToInt().Int64(), ext.EndBlock.ToInt().Int64(), xtask.ScrollTask)
+		taskCtx, skip, err = o.proverClient.GenerateLineaContext(ctx, ext.StartBlock.ToInt().Int64(), ext.EndBlock.ToInt().Int64(), xtask.LineaTask)
 		if err != nil {
 			return logex.Trace(err)
 		}
@@ -271,11 +284,11 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	}
 
 	genPoeStart := time.Now()
-	poe, skip, err := o.proverClient.GetPoeByPob(ctx, o.operatorAddress, ext.BatchData, taskCtx)
+	poe, skip, err := o.proverClient.ProveLinea(ctx, o.operatorAddress, &ext, taskCtx)
 	if err != nil {
 		return logex.Trace(err)
 	}
-	o.operatorMetric.GenPoeMs.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(time.Since(genPoeStart).Milliseconds()))
+	o.operatorMetric.GenPoeMs.WithLabelValues(o.cfg.AvsName, ty.Value()).Set(float64(time.Since(genPoeStart).Milliseconds()))
 
 	logex.Pretty(poe)
 	if skip {
@@ -293,10 +306,10 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	}
 
 	stateHeader := &aggregator.StateHeader{
-		Identifier:                 (*hexutil.Big)(big.NewInt(o.cfg.Config.Identifier)),
+		Identifier:                 (*hexutil.Big)(big.NewInt(int64(ty))),
 		Metadata:                   mdBytes,
 		State:                      poe.Poe.Pack(),
-		QuorumNumbers:              o.quorumNumbers,
+		QuorumNumbers:              []byte{ty.GetQuorum()},
 		QuorumThresholdPercentages: []byte{0},
 		ReferenceBlockNumber:       uint32(ext.ReferenceBlockNumber),
 	}
@@ -307,7 +320,7 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	}
 	sig := o.cfg.BlsKey.SignMessage(digest)
 
-	o.operatorMetric.SubmitTask.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Add(1)
+	o.operatorMetric.SubmitTask.WithLabelValues(o.cfg.AvsName, ty.Value()).Add(1)
 	submitTaskTime := time.Now()
 	// submit to aggregator
 	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
@@ -317,7 +330,82 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	}); err != nil {
 		return logex.Trace(err)
 	}
-	o.operatorMetric.SubmitTaskMs.WithLabelValues(o.cfg.AvsName, xtask.ScrollTask.Value()).Set(float64(time.Since(submitTaskTime).Milliseconds()))
+	o.operatorMetric.SubmitTaskMs.WithLabelValues(o.cfg.AvsName, ty.Value()).Set(float64(time.Since(submitTaskTime).Milliseconds()))
+	// logex.Info(poe)
+	return nil
+}
+
+func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.FetchTaskResp) (err error) {
+	ty := xtask.ScrollTask
+	var ext xtask.ScrollTaskExt
+	if err := json.Unmarshal(resp.Ext, &ext); err != nil {
+		return logex.Trace(err)
+	}
+	var taskCtx *xtask.ScrollContext
+	if len(resp.Context) == 0 {
+		logex.Info("[scroll] generating task context for:", ext.StartBlock.ToInt(), ext.EndBlock.ToInt())
+		var skip bool
+		taskCtx, skip, err = o.proverClient.GenerateScrollContext(ctx, ext.StartBlock.ToInt().Int64(), ext.EndBlock.ToInt().Int64(), ty)
+		if err != nil {
+			return logex.Trace(err)
+		}
+		if skip {
+			return nil
+		}
+	} else {
+		if err := json.Unmarshal(resp.Context, &taskCtx); err != nil {
+			return logex.Trace(err)
+		}
+	}
+
+	genPoeStart := time.Now()
+	poe, skip, err := o.proverClient.GetPoeByPob(ctx, o.operatorAddress, ext.BatchData, taskCtx)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	o.operatorMetric.GenPoeMs.WithLabelValues(o.cfg.AvsName, ty.Value()).Set(float64(time.Since(genPoeStart).Milliseconds()))
+
+	logex.Pretty(poe)
+	if skip {
+		return nil
+	}
+
+	md := &aggregator.Metadata{
+		BatchId:    poe.BatchId,
+		StartBlock: poe.StartBlock,
+		EndBlock:   poe.EndBlock,
+	}
+	mdBytes, err := json.Marshal(md)
+	if err != nil {
+		return logex.Trace(err)
+	}
+
+	stateHeader := &aggregator.StateHeader{
+		Identifier:                 (*hexutil.Big)(big.NewInt(int64(ty))),
+		Metadata:                   mdBytes,
+		State:                      poe.Poe.Pack(),
+		QuorumNumbers:              []byte{ty.GetQuorum()},
+		QuorumThresholdPercentages: []byte{0},
+		ReferenceBlockNumber:       uint32(ext.ReferenceBlockNumber),
+	}
+
+	digest, err := stateHeader.Digest()
+	if err != nil {
+		return logex.Trace(err)
+	}
+	sig := o.cfg.BlsKey.SignMessage(digest)
+
+	o.operatorMetric.SubmitTask.WithLabelValues(o.cfg.AvsName, ty.Value()).Add(1)
+	submitTaskTime := time.Now()
+	// submit to aggregator
+	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
+		Task:       stateHeader,
+		Signature:  sig,
+		OperatorId: o.operatorId,
+	}); err != nil {
+		return logex.Trace(err)
+	}
+	o.operatorMetric.SubmitTaskMs.WithLabelValues(o.cfg.AvsName, ty.Value()).Set(float64(time.Since(submitTaskTime).Milliseconds()))
 	// logex.Info(poe)
 	return nil
 }
@@ -333,6 +421,14 @@ func (o *Operator) checkIsRegistered() error {
 	o.operatorId, err = o.cfg.EigenClients.AvsRegistryChainReader.GetOperatorId(nil, o.operatorAddress)
 	if err != nil {
 		return logex.Trace(err)
+	}
+	quorumNumbers, _, err := o.cfg.EigenClients.AvsRegistryChainReader.GetOperatorsStakeInQuorumsOfOperatorAtCurrentBlock(&bind.CallOpts{}, o.operatorId)
+	if err != nil {
+		return logex.Trace(err)
+	}
+	o.quorumNumbers = make([]byte, len(quorumNumbers))
+	for i, qn := range quorumNumbers {
+		o.quorumNumbers[i] = byte(qn)
 	}
 	return nil
 }

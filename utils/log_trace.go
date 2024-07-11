@@ -29,6 +29,20 @@ type LogTracer struct {
 	scanIntervalSecs int64
 }
 
+type KeyLogTracer struct{}
+
+func (c KeyLogTracer) Get(ctx context.Context) *LogTracer {
+	val := ctx.Value(c)
+	if val == nil {
+		return nil
+	}
+	return val.(*LogTracer)
+}
+
+func (c KeyLogTracer) Save(ctx context.Context, client *LogTracer) context.Context {
+	return context.WithValue(ctx, c, client)
+}
+
 type KeyLogTracerSourceClient struct{}
 
 func (c KeyLogTracerSourceClient) Get(ctx context.Context) *ethclient.Client {
@@ -87,6 +101,37 @@ func (l *LogTracer) saveOffset(off uint64) error {
 	return nil
 }
 
+func (l *LogTracer) LookBack(ctx context.Context, end int64) (*types.Log, error) {
+	for end > 0 {
+		select {
+		case <-ctx.Done():
+			return nil, logex.Trace(ctx.Err())
+		default:
+			filter := l.filter
+			start := end - int64(l.max)
+			if start < 0 {
+				start = 0
+			}
+			filter.ToBlock = big.NewInt(int64(end - 1))
+			filter.FromBlock = big.NewInt(int64(start))
+
+			logs, err := l.source.FilterLogs(ctx, filter)
+			if err != nil {
+				logex.Errorf("[lookback][%v][%v-%v] fetch logs fail: %v => %v, retry in 4secs..", l.id, start, end, filter, err)
+				l.sleepSecs(ctx, 4)
+				continue
+			}
+
+			logex.Infof("[lookback][%v] finished scan blocks [%v, %v], logs: %v", l.id, start, end, len(logs))
+			if len(logs) > 0 {
+				return &logs[len(logs)-1], nil
+			}
+			end = start
+		}
+	}
+	return nil, nil
+}
+
 func (l *LogTracer) Run(ctx context.Context) error {
 	logex.Info("starting log-tracer:", l.id)
 	start, err := l.handler.GetBlock()
@@ -94,6 +139,7 @@ func (l *LogTracer) Run(ctx context.Context) error {
 		return logex.Trace(err)
 	}
 	ctx = KeyLogTracerSourceClient{}.Save(ctx, l.source)
+	ctx = KeyLogTracer{}.Save(ctx, l)
 
 	head, err := l.source.BlockNumber(ctx)
 	if err != nil {

@@ -88,7 +88,7 @@ func ParseConfigContext(cfgPath string, ecdsaKey *ecdsa.PrivateKey) (*ConfigCont
 		EthHttpUrl:                 cfg.EthRpcUrl,
 		EthWsUrl:                   cfg.EthRpcUrl,
 		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress.String(),
-		OperatorStateRetrieverAddr: common.Address{}.String(),
+		OperatorStateRetrieverAddr: cfg.OperatorStateRetrieverAddress.String(),
 		AvsName:                    avsName,
 		PromMetricsIpPortAddress:   cfg.EigenMetricsIpPortAddress,
 	}
@@ -132,7 +132,9 @@ type Config struct {
 	AttestationLayerEcdsaKey string
 	AttestationLayerRpcURL   string
 
-	RegistryCoordinatorAddress common.Address
+	RegistryCoordinatorAddress    common.Address
+	OperatorStateRetrieverAddress common.Address
+
 	TEELivenessVerifierAddress common.Address
 	EigenMetricsIpPortAddress  string
 	NodeApiIpPortAddress       string
@@ -141,6 +143,14 @@ type Config struct {
 func (c *Config) InitFromEnv() {
 	if c.NodeApiIpPortAddress == "" {
 		c.NodeApiIpPortAddress = ":15692"
+	}
+
+	preset := utils.PresetConfigByRegistryCoordinatorAddress(c.RegistryCoordinatorAddress)
+
+	if preset != nil {
+		if c.OperatorStateRetrieverAddress == utils.ZeroAddress {
+			c.OperatorStateRetrieverAddress = preset.OperatorStateRetrieverAddress
+		}
 	}
 }
 

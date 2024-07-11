@@ -32,7 +32,17 @@ func NewOperatorCollector(app string, registry *prometheus.Registry) *OperatorCo
 				Name:      "metadata_counter",
 				Help:      "metadata",
 			},
-			[]string{"avs_name", "operator_addr", "version", "attestation_addr", "prover_url_hash", "prover_version", "task_fetch_with_context"},
+			[]string{
+				"avs_name",
+				"operator_addr",
+				"version",
+				"attestation_addr",
+				"prover_url_hash",
+				"prover_version",
+				"task_fetch_with_context",
+				"scroll_with_context",
+				"linea_with_context",
+			},
 		)),
 		FetchTask: collect(&metrics, prometheus.NewCounterVec(
 			prometheus.CounterOpts{
