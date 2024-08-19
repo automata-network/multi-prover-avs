@@ -6,6 +6,7 @@ import (
 )
 
 const ATT_AUTOMATA = "automata"
+const ATT_AUTOMATA_TEST = "automata_test"
 const ATT_OPTIMISM = "optimism"
 const ATT_HOLESKY = "holesky"
 
@@ -46,6 +47,10 @@ var HoleskyTestnetPreset = &PresetConfig{
 	AttestationLayer: map[string]*PresetAttestationConfig{
 		ATT_HOLESKY: {
 			Address: common.HexToAddress("0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6"),
+		},
+		ATT_AUTOMATA_TEST: {
+			URL:     "https://rpc.ata.network",
+			Address: common.HexToAddress("0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026"),
 		},
 	},
 }
