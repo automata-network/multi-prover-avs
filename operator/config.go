@@ -129,6 +129,7 @@ type Config struct {
 
 	EthRpcUrl string
 
+	AttestationLayerProfile  string
 	AttestationLayerEcdsaKey string
 	AttestationLayerRpcURL   string
 
@@ -150,6 +151,12 @@ func (c *Config) InitFromEnv() {
 	if preset != nil {
 		if c.OperatorStateRetrieverAddress == utils.ZeroAddress {
 			c.OperatorStateRetrieverAddress = preset.OperatorStateRetrieverAddress
+		}
+
+		cfg := preset.GetAttestationLayer(c.AttestationLayerProfile)
+		c.TEELivenessVerifierAddress = cfg.Address
+		if cfg.URL != "" {
+			c.AttestationLayerRpcURL = cfg.URL
 		}
 	}
 }
