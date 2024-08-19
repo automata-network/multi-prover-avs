@@ -30,18 +30,45 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+type AttestationLayer struct {
+	Version int
+	Address common.Address
+	RpcUrl  string
+}
+
+type AttestationLayerClient struct {
+	client *ethclient.Client
+	caller *TEELivenessVerifier.TEELivenessVerifierCaller
+}
+
+func (a *AttestationLayer) Build() (*AttestationLayerClient, error) {
+	client, err := ethclient.Dial(a.RpcUrl)
+	if err != nil {
+		return nil, logex.Trace(err, fmt.Sprintf("connecting to AttestationLayerRpcURL:%q", a.RpcUrl))
+	}
+	caller, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(a.Address, client)
+	if err != nil {
+		return nil, logex.Trace(err, a.Address)
+	}
+	return &AttestationLayerClient{
+		client, caller,
+	}, nil
+}
+
 type Config struct {
 	ListenAddr       string
 	TimeToExpirySecs int
 	MinWaitSecs      int
 
-	EcdsaPrivateKey                      string
-	EthHttpEndpoint                      string
-	EthWsEndpoint                        string
-	AttestationLayerRpcURL               string
-	MultiProverContractAddress           common.Address
-	TEELivenessVerifierContractAddressV1 common.Address
-	TEELivenessVerifierContractAddress   common.Address
+	EcdsaPrivateKey string
+	EthHttpEndpoint string
+	EthWsEndpoint   string
+	// AttestationLayerRpcURL     string
+	MultiProverContractAddress common.Address
+	// TEELivenessVerifierContractAddressV1 common.Address
+	// TEELivenessVerifierContractAddress   common.Address
+
+	AttestationLayer []AttestationLayer
 
 	AVSRegistryCoordinatorAddress common.Address
 	OperatorStateRetrieverAddress common.Address
@@ -83,11 +110,13 @@ type Aggregator struct {
 
 	client *ethclient.Client
 
-	multiProverContract   *MultiProverServiceManager.MultiProverServiceManager
-	TEELivenessVerifierV1 *TEELivenessVerifier.TEELivenessVerifierCaller
-	TEELivenessVerifierV2 *TEELivenessVerifier.TEELivenessVerifierCaller
-	registry              *avsregistry.AvsRegistryServiceChainCaller
-	registryCoordinator   *RegistryCoordinator.RegistryCoordinator
+	multiProverContract *MultiProverServiceManager.MultiProverServiceManager
+
+	attestationLayer []*AttestationLayerClient
+	// TEELivenessVerifierV1 *TEELivenessVerifier.TEELivenessVerifierCaller
+	// TEELivenessVerifierV2 *TEELivenessVerifier.TEELivenessVerifierCaller
+	registry            *avsregistry.AvsRegistryServiceChainCaller
+	registryCoordinator *RegistryCoordinator.RegistryCoordinator
 
 	eigenClients *clients.Clients
 
@@ -119,10 +148,6 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	if err != nil {
 		return nil, logex.Trace(err, fmt.Sprintf("dial:%q", cfg.EthHttpEndpoint))
 	}
-	attestationClient, err := ethclient.Dial(cfg.AttestationLayerRpcURL)
-	if err != nil {
-		return nil, logex.Trace(err, fmt.Sprintf("connecting to AttestationLayerRpcURL:%q", cfg.AttestationLayerRpcURL))
-	}
 	chainId, err := client.ChainID(ctx)
 	if err != nil {
 		return nil, logex.Trace(err, "fetch chainID")
@@ -151,18 +176,6 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
-	teeLivenessVerifier, err := TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddress, attestationClient)
-	if err != nil {
-		return nil, logex.Trace(err)
-	}
-	var teeLivenessVerifierV1 *TEELivenessVerifier.TEELivenessVerifierCaller
-	var emptyAddr common.Address
-	if cfg.TEELivenessVerifierContractAddressV1 != emptyAddr {
-		teeLivenessVerifierV1, err = TEELivenessVerifier.NewTEELivenessVerifierCaller(cfg.TEELivenessVerifierContractAddressV1, attestationClient)
-		if err != nil {
-			return nil, logex.Trace(err)
-		}
-	}
 
 	collector := xmetric.NewAggregatorCollector("avs")
 
@@ -184,6 +197,15 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		return nil, logex.Trace(err)
 	}
 
+	var attestationLayer []*AttestationLayerClient
+	for _, item := range cfg.AttestationLayer {
+		client, err := item.Build()
+		if err != nil {
+			return nil, logex.Trace(err)
+		}
+		attestationLayer = append(attestationLayer, client)
+	}
+
 	return &Aggregator{
 		cfg:                   cfg,
 		transactOpt:           transactOpt,
@@ -191,14 +213,15 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 		eigenClients:          eigenClients,
 		blsAggregationService: blsAggregationService,
 		multiProverContract:   multiProverContract,
-		TEELivenessVerifierV1: teeLivenessVerifierV1,
-		TEELivenessVerifierV2: teeLivenessVerifier,
-		registryCoordinator:   registryCoordinator,
-		registry:              avsRegistryService,
-		TaskManager:           taskManager,
-		taskIndexMap:          make(map[types.Bytes32]*Task),
-		Collector:             collector,
-		registryCache:         registryCache,
+		attestationLayer:      attestationLayer,
+		// TEELivenessVerifierV1: teeLivenessVerifierV1,
+		// TEELivenessVerifierV2: teeLivenessVerifier,
+		registryCoordinator: registryCoordinator,
+		registry:            avsRegistryService,
+		TaskManager:         taskManager,
+		taskIndexMap:        make(map[types.Bytes32]*Task),
+		Collector:           collector,
+		registryCache:       registryCache,
 	}, nil
 }
 
@@ -241,8 +264,8 @@ func (agg *Aggregator) startUpdateOperators(ctx context.Context) (func() error, 
 }
 
 func (agg *Aggregator) verifyKey(x [32]byte, y [32]byte) (bool, error) {
-	if agg.TEELivenessVerifierV1 != nil {
-		pass, err := agg.TEELivenessVerifierV1.VerifyLivenessProof(nil, x, y)
+	for _, layer := range agg.attestationLayer {
+		pass, err := layer.caller.VerifyLivenessProof(nil, x, y)
 		if err != nil {
 			return false, logex.Trace(err, "v1")
 		}
@@ -250,12 +273,7 @@ func (agg *Aggregator) verifyKey(x [32]byte, y [32]byte) (bool, error) {
 			return true, nil
 		}
 	}
-
-	pass, err := agg.TEELivenessVerifierV2.VerifyLivenessProof(nil, x, y)
-	if err != nil {
-		return false, logex.Trace(err, "v2")
-	}
-	return pass, nil
+	return false, nil
 }
 
 func (agg *Aggregator) startRpcServer(ctx context.Context) (func() error, error) {
