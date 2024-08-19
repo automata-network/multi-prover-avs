@@ -17,6 +17,3 @@
 	path = sgx-prover
 	url = https://github.com/automata-network/sgx-prover
 	branch = avs
-[submodule "linea-sgx-prover"]
-	path = linea-sgx-prover
-	url = https://github.com/automata-network/linea-sgx-prover
