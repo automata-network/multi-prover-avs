@@ -200,6 +200,7 @@ contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
             );
             console.log("reuse proxy");
             console.logAddress(verifierProxyAddr);
+            console.logAddress(address(proxyAdmin));
         } else {
             console.log("Deploy new proxy");
             EmptyContract emptyContract = new EmptyContract();
@@ -229,6 +230,7 @@ contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
                 attestValiditySecs
             );
         }
+        
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(verifierProxyAddr),
             address(verifierImpl),
