@@ -94,6 +94,7 @@ func (p *ProverClient) DaTryLock(ctx context.Context, hash common.Hash) (string,
 	if err := p.client.CallContext(ctx, &result, "da_tryLock", hash); err != nil {
 		return "", logex.Trace(err)
 	}
+	logex.Infof("DA TryLock[%v]: %v", hash, result)
 	return result, nil
 }
 
