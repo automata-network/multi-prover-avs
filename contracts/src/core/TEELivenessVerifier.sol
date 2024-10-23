@@ -31,6 +31,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
 
     // added at v2
     uint256 public maxBlockNumberDiff;
+    mapping(bytes32 proverKey => address proverAddr) public attestedProverAddr;
 
     constructor() {
         _disableInitializers();
@@ -97,13 +98,13 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         bytes32 reportHash = keccak256(_report);
         require(!attestedReports[reportHash], "report is already used");
 
-        (, bytes32 reportDataHash) = splitBytes64(reportData);
+        (bytes32 proverBytes, bytes32 reportDataHash) = splitBytes64(reportData);
         require(dataHash == reportDataHash, "report data hash mismatch");
 
         Prover memory prover = Prover(_data.pubkey, block.timestamp);
-        attestedProvers[
-            keccak256(abi.encode(_data.pubkey.x, _data.pubkey.y))
-        ] = prover;
+        bytes32 proverKey = keccak256(abi.encode(_data.pubkey.x, _data.pubkey.y));
+        attestedProvers[proverKey] = prover;
+        attestedProverAddr[proverKey] = address(uint160(uint256(proverBytes)));
         attestedReports[reportHash] = true;
     }
 
@@ -115,6 +116,19 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         return
             attestedProvers[signer].time + attestValiditySeconds >
             block.timestamp;
+    }
+
+    function verifyLivenessProofV2(
+        bytes32 pubkeyX,
+        bytes32 pubkeyY,
+        address proverKey
+    ) public view returns (bool) {
+        bytes32 signer = keccak256(abi.encode(pubkeyX, pubkeyY));
+        bool succ = attestedProvers[signer].time + attestValiditySeconds > block.timestamp;
+        if (!succ) {
+            return false;
+        }
+        return attestedProverAddr[signer] == proverKey;
     }
 
     function verifyAttestationV2(

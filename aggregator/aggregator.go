@@ -80,6 +80,8 @@ type Config struct {
 	GenTaskSampling  uint64
 	ExecTaskSampling uint64
 
+	LineaMaxBlock int64
+
 	OpenTelemetry *xmetric.OpenTelemetryConfig
 
 	TaskFetcher []*xtask.TaskManagerConfig
@@ -90,6 +92,9 @@ type Config struct {
 func (cfg *Config) Init() error {
 	if cfg.Sampling == 0 {
 		cfg.Sampling = 2000
+	}
+	if cfg.LineaMaxBlock == 0 {
+		cfg.LineaMaxBlock = 100
 	}
 	if cfg.ExecTaskSampling == 0 {
 		cfg.ExecTaskSampling = cfg.Sampling
@@ -179,7 +184,7 @@ func NewAggregator(ctx context.Context, cfg *Config) (*Aggregator, error) {
 
 	collector := xmetric.NewAggregatorCollector("avs")
 
-	taskManager, err := xtask.NewTaskManager(collector, int64(cfg.GenTaskSampling), eigenClients.EthHttpClient, cfg.TaskFetcher)
+	taskManager, err := xtask.NewTaskManager(collector, int64(cfg.GenTaskSampling), cfg.LineaMaxBlock, eigenClients.EthHttpClient, cfg.TaskFetcher)
 	if err != nil {
 		return nil, logex.Trace(err)
 	}
@@ -264,12 +269,13 @@ func (agg *Aggregator) startUpdateOperators(ctx context.Context) (func() error, 
 }
 
 func (agg *Aggregator) verifyKey(x [32]byte, y [32]byte) (bool, error) {
-	for _, layer := range agg.attestationLayer {
+	for idx, layer := range agg.attestationLayer {
 		pass, err := layer.caller.VerifyLivenessProof(nil, x, y)
 		if err != nil {
 			return false, logex.Trace(err, "v1")
 		}
 		if pass {
+			logex.Info("pass attestation check in", idx)
 			return true, nil
 		}
 	}

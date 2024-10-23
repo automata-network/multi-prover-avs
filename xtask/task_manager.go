@@ -113,7 +113,8 @@ type TaskManager struct {
 	tasksMutex sync.Mutex
 	tasks      map[TaskType]*TaskTuple
 
-	lineaPrevLog *types.Log
+	lineaMaxBlock int64
+	lineaPrevLog  *types.Log
 }
 
 type TaskTuple struct {
@@ -128,7 +129,7 @@ type TaskInfo struct {
 	Ext     json.RawMessage
 }
 
-func NewTaskManager(collector *xmetric.AggregatorCollector, sampling int64, referenceClient eth.Client, tasks []*TaskManagerConfig) (*TaskManager, error) {
+func NewTaskManager(collector *xmetric.AggregatorCollector, sampling int64, lineaMaxBlock int64, referenceClient eth.Client, tasks []*TaskManagerConfig) (*TaskManager, error) {
 	sources := make(map[string]*ethclient.Client)
 	tracers := make(map[TaskType]*utils.LogTracer)
 	contexts := make(map[TaskType]*TaskContext)
@@ -139,6 +140,7 @@ func NewTaskManager(collector *xmetric.AggregatorCollector, sampling int64, refe
 		contexts:        contexts,
 		collector:       collector,
 		referenceClient: referenceClient,
+		lineaMaxBlock:   lineaMaxBlock,
 		tasks:           make(map[TaskType]*TaskTuple, MaxTaskType),
 	}
 
@@ -296,6 +298,9 @@ func (t *TaskManager) onLineaTask(ctx context.Context, _ *ethclient.Client, log 
 
 	startBlock := new(big.Int).SetBytes(prevLog.Topics[1][:]).Int64() + 1
 	endBlock := new(big.Int).SetBytes(log.Topics[1][:]).Int64()
+	if endBlock-startBlock > t.lineaMaxBlock {
+		startBlock = startBlock - endBlock
+	}
 	batchId := endBlock // can't determine the batch, so we use the end block number
 
 	logex.Infof("generating task[linea] for #%v, refblk: %v", batchId, referenceBlockNumber)
@@ -323,7 +328,7 @@ func (t *TaskManager) onLineaTask(ctx context.Context, _ *ethclient.Client, log 
 		return nil
 	}
 	if err != nil {
-		return logex.Trace(err, fmt.Sprintf("fetching context for scroll batchId#%v", batchId))
+		return logex.Trace(err, fmt.Sprintf("fetching context for linea batchId#%v", batchId))
 	}
 	generateContextCost := time.Since(startGenerateContext).Truncate(time.Millisecond)
 
@@ -395,7 +400,7 @@ func (t *TaskManager) onScrollTask(ctx context.Context, source *ethclient.Client
 		return logex.Trace(err)
 	}
 
-	t.updateTask(*taskInfo)
+	// t.updateTask(*taskInfo)
 
 	startGenerateContext := time.Now()
 	taskCtx, ignore, err := prover.GenerateScrollContext(ctx, startBlock, endBlock, taskInfo.Type)

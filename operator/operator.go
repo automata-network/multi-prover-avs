@@ -324,9 +324,10 @@ func (o *Operator) processLineaTask(ctx context.Context, resp *aggregator.FetchT
 	submitTaskTime := time.Now()
 	// submit to aggregator
 	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
-		Task:       stateHeader,
-		Signature:  sig,
-		OperatorId: o.operatorId,
+		Task:            stateHeader,
+		Signature:       sig,
+		OperatorId:      o.operatorId,
+		ProverSignature: poe.PoeSignature,
 	}); err != nil {
 		return logex.Trace(err)
 	}
@@ -399,9 +400,10 @@ func (o *Operator) processScrollTask(ctx context.Context, resp *aggregator.Fetch
 	submitTaskTime := time.Now()
 	// submit to aggregator
 	if err := o.aggregator.SubmitTask(ctx, &aggregator.TaskRequest{
-		Task:       stateHeader,
-		Signature:  sig,
-		OperatorId: o.operatorId,
+		Task:            stateHeader,
+		Signature:       sig,
+		OperatorId:      o.operatorId,
+		ProverSignature: poe.PoeSignature,
 	}); err != nil {
 		return logex.Trace(err)
 	}

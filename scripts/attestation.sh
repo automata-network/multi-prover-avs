@@ -22,9 +22,7 @@ function deploy() {
     ENV=$ENV \
     _script script/DeployTEELivenessService.s.sol --sig $1'()'
 
-    teeVerifierAddr=$(_get_key $TEE_DEPLOY .TEELivenessVerifierProxy)
-	_set_key config/aggregator.json TEELivenessVerifierContractAddress $teeVerifierAddr
-	_set_key config/operator.json TEELivenessVerifierAddress $teeVerifierAddr
+    cat $TEE_DEPLOY
 }
 
 function set_validity_secs() {

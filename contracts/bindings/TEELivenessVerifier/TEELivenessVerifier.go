@@ -45,7 +45,7 @@ type TEELivenessVerifierReportDataV2 struct {
 
 // TEELivenessVerifierMetaData contains all meta data concerning the TEELivenessVerifier contract.
 var TEELivenessVerifierMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"attestValiditySeconds\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"attestedProvers\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structTEELivenessVerifier.Pubkey\",\"components\":[{\"name\":\"x\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"y\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"time\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"attestedReports\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"changeAttestValiditySeconds\",\"inputs\":[{\"name\":\"val\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"changeAttestationImpl\",\"inputs\":[{\"name\":\"_attestationAddr\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"changeMaxBlockNumberDiff\",\"inputs\":[{\"name\":\"_maxBlockNumberDiff\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"dcapAttestation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAttestation\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_attestationAddr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_maxBlockNumberDiff\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_attestValiditySeconds\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxBlockNumberDiff\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"reinitialize\",\"inputs\":[{\"name\":\"i\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_attestationAddr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_maxBlockNumberDiff\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_attestValiditySeconds\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"submitLivenessProofV2\",\"inputs\":[{\"name\":\"_data\",\"type\":\"tuple\",\"internalType\":\"structTEELivenessVerifier.ReportDataV2\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structTEELivenessVerifier.Pubkey\",\"components\":[{\"name\":\"x\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"y\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"referenceBlockNumber\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"referenceBlockHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"proverAddressHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"_report\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyAttestationV2\",\"inputs\":[{\"name\":\"pubkeyX\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"pubkeyY\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyLivenessProof\",\"inputs\":[{\"name\":\"pubkeyX\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"pubkeyY\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyMrEnclave\",\"inputs\":[{\"name\":\"_mrenclave\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyMrSigner\",\"inputs\":[{\"name\":\"_mrsigner\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"attestValiditySeconds\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"attestedProverAddr\",\"inputs\":[{\"name\":\"proverKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"proverAddr\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"attestedProvers\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structTEELivenessVerifier.Pubkey\",\"components\":[{\"name\":\"x\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"y\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"time\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"attestedReports\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"changeAttestValiditySeconds\",\"inputs\":[{\"name\":\"val\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"changeAttestationImpl\",\"inputs\":[{\"name\":\"_attestationAddr\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"changeMaxBlockNumberDiff\",\"inputs\":[{\"name\":\"_maxBlockNumberDiff\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"dcapAttestation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAttestation\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_attestationAddr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_maxBlockNumberDiff\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_attestValiditySeconds\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxBlockNumberDiff\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"reinitialize\",\"inputs\":[{\"name\":\"i\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_attestationAddr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_maxBlockNumberDiff\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_attestValiditySeconds\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"submitLivenessProofV2\",\"inputs\":[{\"name\":\"_data\",\"type\":\"tuple\",\"internalType\":\"structTEELivenessVerifier.ReportDataV2\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structTEELivenessVerifier.Pubkey\",\"components\":[{\"name\":\"x\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"y\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"referenceBlockNumber\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"referenceBlockHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"proverAddressHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"_report\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyAttestationV2\",\"inputs\":[{\"name\":\"pubkeyX\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"pubkeyY\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyLivenessProof\",\"inputs\":[{\"name\":\"pubkeyX\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"pubkeyY\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyLivenessProofV2\",\"inputs\":[{\"name\":\"pubkeyX\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"pubkeyY\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"proverKey\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyMrEnclave\",\"inputs\":[{\"name\":\"_mrenclave\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyMrSigner\",\"inputs\":[{\"name\":\"_mrsigner\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
 }
 
 // TEELivenessVerifierABI is the input ABI used to generate the binding from.
@@ -223,6 +223,37 @@ func (_TEELivenessVerifier *TEELivenessVerifierSession) AttestValiditySeconds() 
 // Solidity: function attestValiditySeconds() view returns(uint256)
 func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) AttestValiditySeconds() (*big.Int, error) {
 	return _TEELivenessVerifier.Contract.AttestValiditySeconds(&_TEELivenessVerifier.CallOpts)
+}
+
+// AttestedProverAddr is a free data retrieval call binding the contract method 0x80c19970.
+//
+// Solidity: function attestedProverAddr(bytes32 proverKey) view returns(address proverAddr)
+func (_TEELivenessVerifier *TEELivenessVerifierCaller) AttestedProverAddr(opts *bind.CallOpts, proverKey [32]byte) (common.Address, error) {
+	var out []interface{}
+	err := _TEELivenessVerifier.contract.Call(opts, &out, "attestedProverAddr", proverKey)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// AttestedProverAddr is a free data retrieval call binding the contract method 0x80c19970.
+//
+// Solidity: function attestedProverAddr(bytes32 proverKey) view returns(address proverAddr)
+func (_TEELivenessVerifier *TEELivenessVerifierSession) AttestedProverAddr(proverKey [32]byte) (common.Address, error) {
+	return _TEELivenessVerifier.Contract.AttestedProverAddr(&_TEELivenessVerifier.CallOpts, proverKey)
+}
+
+// AttestedProverAddr is a free data retrieval call binding the contract method 0x80c19970.
+//
+// Solidity: function attestedProverAddr(bytes32 proverKey) view returns(address proverAddr)
+func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) AttestedProverAddr(proverKey [32]byte) (common.Address, error) {
+	return _TEELivenessVerifier.Contract.AttestedProverAddr(&_TEELivenessVerifier.CallOpts, proverKey)
 }
 
 // AttestedProvers is a free data retrieval call binding the contract method 0x3b7a3d82.
@@ -454,6 +485,37 @@ func (_TEELivenessVerifier *TEELivenessVerifierSession) VerifyLivenessProof(pubk
 // Solidity: function verifyLivenessProof(bytes32 pubkeyX, bytes32 pubkeyY) view returns(bool)
 func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) VerifyLivenessProof(pubkeyX [32]byte, pubkeyY [32]byte) (bool, error) {
 	return _TEELivenessVerifier.Contract.VerifyLivenessProof(&_TEELivenessVerifier.CallOpts, pubkeyX, pubkeyY)
+}
+
+// VerifyLivenessProofV2 is a free data retrieval call binding the contract method 0xa14065dc.
+//
+// Solidity: function verifyLivenessProofV2(bytes32 pubkeyX, bytes32 pubkeyY, address proverKey) view returns(bool)
+func (_TEELivenessVerifier *TEELivenessVerifierCaller) VerifyLivenessProofV2(opts *bind.CallOpts, pubkeyX [32]byte, pubkeyY [32]byte, proverKey common.Address) (bool, error) {
+	var out []interface{}
+	err := _TEELivenessVerifier.contract.Call(opts, &out, "verifyLivenessProofV2", pubkeyX, pubkeyY, proverKey)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// VerifyLivenessProofV2 is a free data retrieval call binding the contract method 0xa14065dc.
+//
+// Solidity: function verifyLivenessProofV2(bytes32 pubkeyX, bytes32 pubkeyY, address proverKey) view returns(bool)
+func (_TEELivenessVerifier *TEELivenessVerifierSession) VerifyLivenessProofV2(pubkeyX [32]byte, pubkeyY [32]byte, proverKey common.Address) (bool, error) {
+	return _TEELivenessVerifier.Contract.VerifyLivenessProofV2(&_TEELivenessVerifier.CallOpts, pubkeyX, pubkeyY, proverKey)
+}
+
+// VerifyLivenessProofV2 is a free data retrieval call binding the contract method 0xa14065dc.
+//
+// Solidity: function verifyLivenessProofV2(bytes32 pubkeyX, bytes32 pubkeyY, address proverKey) view returns(bool)
+func (_TEELivenessVerifier *TEELivenessVerifierCallerSession) VerifyLivenessProofV2(pubkeyX [32]byte, pubkeyY [32]byte, proverKey common.Address) (bool, error) {
+	return _TEELivenessVerifier.Contract.VerifyLivenessProofV2(&_TEELivenessVerifier.CallOpts, pubkeyX, pubkeyY, proverKey)
 }
 
 // VerifyMrEnclave is a free data retrieval call binding the contract method 0x18a98d6f.

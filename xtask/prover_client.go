@@ -53,11 +53,12 @@ func NewProverClient(url string) (*ProverClient, error) {
 }
 
 type PoeResponse struct {
-	NotReady   bool   `json:"not_ready"`
-	BatchId    uint64 `json:"batch_id"`
-	StartBlock uint64 `json:"start_block"`
-	EndBlock   uint64 `json:"end_block"`
-	Poe        *Poe   `json:"poe"`
+	NotReady     bool          `json:"not_ready"`
+	BatchId      uint64        `json:"batch_id"`
+	StartBlock   uint64        `json:"start_block"`
+	EndBlock     uint64        `json:"end_block"`
+	Poe          *Poe          `json:"poe"`
+	PoeSignature hexutil.Bytes `json:"poe_signature"`
 }
 
 type Poe struct {
@@ -93,6 +94,7 @@ func (p *ProverClient) DaTryLock(ctx context.Context, hash common.Hash) (string,
 	if err := p.client.CallContext(ctx, &result, "da_tryLock", hash); err != nil {
 		return "", logex.Trace(err)
 	}
+	logex.Infof("DA TryLock[%v]: %v", hash, result)
 	return result, nil
 }
 

@@ -34,9 +34,10 @@ type Metadata struct {
 }
 
 type TaskRequest struct {
-	Task       *StateHeader
-	Signature  *bls.Signature
-	OperatorId types.OperatorId
+	Task            *StateHeader
+	Signature       *bls.Signature
+	OperatorId      types.OperatorId
+	ProverSignature hexutil.Bytes
 }
 
 type StateHeader struct {
