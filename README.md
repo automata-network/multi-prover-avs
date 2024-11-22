@@ -1,11 +1,17 @@
 ## Table of Contents
+- [Table of Contents](#table-of-contents)
 - [About Multi-Prover AVS](#about-multi-prover-avs)
 - [Directory Structure](#directory-structure)
 - [AVS Task Description](#avs-task-description)
 - [AVS Architecture](#avs-architecture)
 - [AVS Workflow](#avs-workflow)
 - [TEE Committee and Quorum](#tee-committee-and-quorum)
-- [Quick Start](#quick-start)
+- [Deployments](#deployments)
+  - [Holesky Testnet Deployments](#holesky-testnet-deployments)
+  - [Mainnet Deployment](#mainnet-deployment)
+- [Compile From Source](#compile-from-source)
+  - [Operator](#operator)
+  - [Aggregator](#aggregator)
 
 ## About Multi-Prover AVS
 The Automata Multi-Prover AVS target to build a robust, fortified prover system through the use of diverse, decentralized TEE committees.
@@ -125,32 +131,32 @@ The concept of a **TEE Quorum** aligns with the quorum definition utilized by Ei
 
 ## Deployments
 ### Holesky Testnet Deployments
-| Name | Proxy |
-| ---- | ---- |
-| MultiProverServiceManager |[`0x4665Af665df5703445645D243f0FD63eD3b9D132`](https://holesky.etherscan.io/address/0x4665Af665df5703445645D243f0FD63eD3b9D132)|
-| RegistryCoordinator |[`0x62c715575cE3Ad7C5a43aA325b881c70564f2215`](https://holesky.etherscan.io/address/0x62c715575cE3Ad7C5a43aA325b881c70564f2215)|
-| StakeRegistry |[`0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8`](https://holesky.etherscan.io/address/0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8)|
-| BlsApkRegistry |[`0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb`](https://holesky.etherscan.io/address/0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb)|
-| IndexRegistry |[`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500)|
-| OperatorStateRetriever | [`0xbfd43ac0a19c843e44491c3207ea13914818E214`](https://holesky.etherscan.io/address/0xbfd43ac0a19c843e44491c3207ea13914818E214) |
-| TEELivenessVerifier | [`0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6`](https://holesky.etherscan.io/address/0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6)|
-| AutomataDcapV3Attestation | [`0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14`](https://holesky.etherscan.io/address/0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14) |
+| Name                      | Proxy                                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| MultiProverServiceManager | [`0x4665Af665df5703445645D243f0FD63eD3b9D132`](https://holesky.etherscan.io/address/0x4665Af665df5703445645D243f0FD63eD3b9D132) |
+| RegistryCoordinator       | [`0x62c715575cE3Ad7C5a43aA325b881c70564f2215`](https://holesky.etherscan.io/address/0x62c715575cE3Ad7C5a43aA325b881c70564f2215) |
+| StakeRegistry             | [`0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8`](https://holesky.etherscan.io/address/0x5C7BbAfA3d5A3Fa0b592cDCF4b7B52261FaA99A8) |
+| BlsApkRegistry            | [`0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb`](https://holesky.etherscan.io/address/0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb) |
+| IndexRegistry             | [`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500) |
+| OperatorStateRetriever    | [`0xbfd43ac0a19c843e44491c3207ea13914818E214`](https://holesky.etherscan.io/address/0xbfd43ac0a19c843e44491c3207ea13914818E214) |
+| Holesky Attestation Layer | [`0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6`](https://holesky.etherscan.io/address/0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6) |
 
-Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://atanetwork.notion.site/Automata-Multi-Prover-AVS-Testnet-Operator-Guide-48ad947de8404716b9e4e1e946618f08).
+
+Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/holesky).
 
 ### Mainnet Deployment
-| Name | Proxy |
-| ---- | ---- |
-| MultiProverServiceManager |[`0xE5445838C475A2980e6a88054ff1514230b83aEb`](https://etherscan.io/address/0xE5445838C475A2980e6a88054ff1514230b83aEb)|
-| RegistryCoordinator |[`0x414696E4F7f06273973E89bfD3499e8666D63Bd4`](https://etherscan.io/address/0x414696E4F7f06273973E89bfD3499e8666D63Bd4)|
-| StakeRegistry |[`0x4A4EC1631aE79699be7dCFD3fCA395Ab89c5eFe9`](https://etherscan.io/address/0x4A4EC1631aE79699be7dCFD3fCA395Ab89c5eFe9)|
-| BlsApkRegistry |[`0x61D25c9b943b893747Bd33F92B62Ec8270222e6F`](https://etherscan.io/address/0x61D25c9b943b893747Bd33F92B62Ec8270222e6F)|
-| IndexRegistry |[`0x16552d7863560Ee6903F092A901A9124a5013085`](https://etherscan.io/address/0x16552d7863560Ee6903F092A901A9124a5013085)|
-| OperatorStateRetriever | [`0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6`](https://etherscan.io/address/0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6) |
-| TEELivenessVerifier | [`0x8E26055388347A2f4A7a112A7210CcC88A1c2F30`](https://optimism.etherscan.io/address/0x8E26055388347A2f4A7a112A7210CcC88A1c2F30) |
-| AutomataDcapV3Attestation | [`0xA65a18a7f8Bb621017Ec0481B7eFe37a006EbD93`](https://holesky.etherscan.io/address/0xA65a18a7f8Bb621017Ec0481B7eFe37a006EbD93) |
+| Name                       | Proxy                                                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| MultiProverServiceManager  | [`0xE5445838C475A2980e6a88054ff1514230b83aEb`](https://etherscan.io/address/0xE5445838C475A2980e6a88054ff1514230b83aEb)            |
+| RegistryCoordinator        | [`0x414696E4F7f06273973E89bfD3499e8666D63Bd4`](https://etherscan.io/address/0x414696E4F7f06273973E89bfD3499e8666D63Bd4)            |
+| StakeRegistry              | [`0x4A4EC1631aE79699be7dCFD3fCA395Ab89c5eFe9`](https://etherscan.io/address/0x4A4EC1631aE79699be7dCFD3fCA395Ab89c5eFe9)            |
+| BlsApkRegistry             | [`0x61D25c9b943b893747Bd33F92B62Ec8270222e6F`](https://etherscan.io/address/0x61D25c9b943b893747Bd33F92B62Ec8270222e6F)            |
+| IndexRegistry              | [`0x16552d7863560Ee6903F092A901A9124a5013085`](https://etherscan.io/address/0x16552d7863560Ee6903F092A901A9124a5013085)            |
+| OperatorStateRetriever     | [`0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6`](https://etherscan.io/address/0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6)            |
+| Optimism Attestation Layer | [`0x8E26055388347A2f4A7a112A7210CcC88A1c2F30`](https://optimistic.etherscan.io/address/0x8E26055388347A2f4A7a112A7210CcC88A1c2F30) |
+| Automata Attestation Layer | [`0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026`](https://explorer.ata.network/address/0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026)    |
 
-The Multi-Prover AVS will launch on mainnet soon, please be patient!
+Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Ethereum mainnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/mainnet).
 
 ## Compile From Source
 
