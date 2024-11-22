@@ -139,8 +139,8 @@ The concept of a **TEE Quorum** aligns with the quorum definition utilized by Ei
 | BlsApkRegistry            | [`0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb`](https://holesky.etherscan.io/address/0x2b6C2584760eDbcEC42391862f97dBB872b5e2Eb) |
 | IndexRegistry             | [`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500) |
 | OperatorStateRetriever    | [`0xbfd43ac0a19c843e44491c3207ea13914818E214`](https://holesky.etherscan.io/address/0xbfd43ac0a19c843e44491c3207ea13914818E214) |
-| TEELivenessVerifier       | [`0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6`](https://holesky.etherscan.io/address/0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6) |
-| AutomataDcapV3Attestation | [`0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14`](https://holesky.etherscan.io/address/0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14) |
+| Holesky Attestation Layer | [`0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6`](https://holesky.etherscan.io/address/0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6) |
+
 
 Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/holesky).
 
