@@ -156,7 +156,7 @@ Please visit the [Operator setup](https://github.com/automata-network/multiprove
 | Optimism Attestation Layer | [`0x8E26055388347A2f4A7a112A7210CcC88A1c2F30`](https://optimistic.etherscan.io/address/0x8E26055388347A2f4A7a112A7210CcC88A1c2F30) |
 | Automata Attestation Layer | [`0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026`](https://explorer.ata.network/address/0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026)    |
 
-Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/mainnet).
+Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Ethereum mainnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/mainnet).
 
 ## Compile From Source
 
