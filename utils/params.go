@@ -50,7 +50,7 @@ var HoleskyTestnetPreset = &PresetConfig{
 		},
 		ATT_AUTOMATA_TEST: {
 			URL:     "https://rpc.ata.network",
-			Address: common.HexToAddress("0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026"),
+			Address: common.HexToAddress("0xC9D1Fe39aC6259e66B3Be0e9DE5b33F8bbCa350F"),
 		},
 	},
 }
@@ -68,7 +68,7 @@ var MainnetPreset = &PresetConfig{
 		},
 		ATT_AUTOMATA: {
 			URL:     "https://rpc.ata.network",
-			Address: common.HexToAddress("0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026"),
+			Address: common.HexToAddress("0xC9D1Fe39aC6259e66B3Be0e9DE5b33F8bbCa350F"),
 		},
 	},
 }
