@@ -1,0 +1,7 @@
+{
+  "AttestationVerifier": "0x7Da0fc382621A3f50b7725293Bc8318A55a09a55",
+  "ProxyAdmin": "0x711BCa080e59Cc2b1a71B1D86b3199991595197A",
+  "TEELivenessVerifierImpl": "0x79a02954119800F00Cb3CD05b2EdB005DFAf24DF",
+  "TEELivenessVerifierProxy": "0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991",
+  "remark": "TEELivenessVerifier"
+}

@@ -140,6 +140,7 @@ The concept of a **TEE Quorum** aligns with the quorum definition utilized by Ei
 | IndexRegistry             | [`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500) |
 | OperatorStateRetriever    | [`0xbfd43ac0a19c843e44491c3207ea13914818E214`](https://holesky.etherscan.io/address/0xbfd43ac0a19c843e44491c3207ea13914818E214) |
 | Holesky Attestation Layer | [`0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6`](https://holesky.etherscan.io/address/0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6) |
+| Automata Attestation Layer | [`0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991`](https://explorer-testnet.ata.network/address/0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991)    |
 
 
 Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/holesky).
