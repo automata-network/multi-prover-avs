@@ -19,6 +19,11 @@ contract TEELivenessManager is Script {
         liveness.changeMaxBlockNumberDiff(blocks);
     }
 
+    function changeAttestationImpl(address addr) public {
+        vm.startBroadcast();
+        liveness.changeAttestationImpl(addr);
+    }
+
     function sendAttestation(TEELivenessVerifier.ReportDataV2 calldata reportData, bytes calldata quote) public {
         // string memory quote = vm.readFile(path);
         vm.startBroadcast();

@@ -16,6 +16,7 @@ function deploy() {
         return 1
     fi
     MAX_BLOCK_NUMBER_DIFF=$(_get_env "MAX_BLOCK_NUMBER_DIFF") \
+    AUTOMATA_DCAP_ATTESTATION=$(_get_env "AUTOMATA_DCAP_ATTESTATION") \
     VERSION=$2 \
     ATTEST_VALIDITY_SECS=$3 \
     DEPLOY_KEY_SUFFIX=TEE_DEPLOY_KEY \
@@ -28,6 +29,12 @@ function deploy() {
 function set_validity_secs() {
 	TEE_LIVENESS=$(_get_key $TEE_DEPLOY .TEELivenessVerifierProxy) \
 	_script script/TEELivenessManager.s.sol --sig 'changeAttestValiditySeconds(uint256)' $1
+}
+
+function set_attestation_impl() {
+	TEE_LIVENESS=$(_get_key $TEE_DEPLOY .TEELivenessVerifierProxy) \
+    DEPLOY_KEY_SUFFIX=TEE_DEPLOY_KEY \
+	_script script/TEELivenessManager.s.sol --sig 'changeAttestationImpl(address)' $1
 }
 
 

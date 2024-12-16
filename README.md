@@ -140,6 +140,7 @@ The concept of a **TEE Quorum** aligns with the quorum definition utilized by Ei
 | IndexRegistry             | [`0x158583f023ca440e79F199f037aa8b53b198F500`](https://holesky.etherscan.io/address/0x158583f023ca440e79F199f037aa8b53b198F500) |
 | OperatorStateRetriever    | [`0xbfd43ac0a19c843e44491c3207ea13914818E214`](https://holesky.etherscan.io/address/0xbfd43ac0a19c843e44491c3207ea13914818E214) |
 | Holesky Attestation Layer | [`0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6`](https://holesky.etherscan.io/address/0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6) |
+| Automata Attestation Layer | [`0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991`](https://explorer-testnet.ata.network/address/0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991)    |
 
 
 Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Holesky testnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/holesky).
@@ -154,7 +155,7 @@ Please visit the [Operator setup](https://github.com/automata-network/multiprove
 | IndexRegistry              | [`0x16552d7863560Ee6903F092A901A9124a5013085`](https://etherscan.io/address/0x16552d7863560Ee6903F092A901A9124a5013085)            |
 | OperatorStateRetriever     | [`0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6`](https://etherscan.io/address/0x91246253d3Bff9Ae19065A90dC3AB6e09EefD2B6)            |
 | Optimism Attestation Layer | [`0x8E26055388347A2f4A7a112A7210CcC88A1c2F30`](https://optimistic.etherscan.io/address/0x8E26055388347A2f4A7a112A7210CcC88A1c2F30) |
-| Automata Attestation Layer | [`0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026`](https://explorer.ata.network/address/0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026)    |
+| Automata Attestation Layer | [`0xC9D1Fe39aC6259e66B3Be0e9DE5b33F8bbCa350F`](https://explorer.ata.network/address/0xC9D1Fe39aC6259e66B3Be0e9DE5b33F8bbCa350F)    |
 
 Please visit the [Operator setup](https://github.com/automata-network/multiprover-avs-operator-setup) repository if you are interested in joining the Multi-Prover AVS on Ethereum mainnet. The onboarding guide is available [here](https://github.com/automata-network/multiprover-avs-operator-setup/tree/main/mainnet).
 

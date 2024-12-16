@@ -6,7 +6,8 @@ import (
 )
 
 const ATT_AUTOMATA = "automata"
-const ATT_AUTOMATA_TEST = "automata_test"
+const ATT_AUTOMATA_TESTNET = "automata_testnet"
+const ATT_AUTOMATA_TEST = "automata_test" // internal feature: test with automata mainnet on holesky
 const ATT_OPTIMISM = "optimism"
 const ATT_HOLESKY = "holesky"
 
@@ -50,7 +51,11 @@ var HoleskyTestnetPreset = &PresetConfig{
 		},
 		ATT_AUTOMATA_TEST: {
 			URL:     "https://rpc.ata.network",
-			Address: common.HexToAddress("0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026"),
+			Address: common.HexToAddress("0xC9D1Fe39aC6259e66B3Be0e9DE5b33F8bbCa350F"),
+		},
+		ATT_AUTOMATA_TESTNET: {
+			URL:     "https://rpc-testnet.ata.network",
+			Address: common.HexToAddress("0xf91bFe9EB9F2B3c4Ad339168a42542Ae5f440991"),
 		},
 	},
 }
@@ -68,7 +73,7 @@ var MainnetPreset = &PresetConfig{
 		},
 		ATT_AUTOMATA: {
 			URL:     "https://rpc.ata.network",
-			Address: common.HexToAddress("0x2c674af4C9B6DE266E4515Be0E2A9C1c30452026"),
+			Address: common.HexToAddress("0xC9D1Fe39aC6259e66B3Be0e9DE5b33F8bbCa350F"),
 		},
 	},
 }
