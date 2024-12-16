@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {IAttestation} from "../interfaces/IAttestation.sol";
+import {IAttestationVerifier} from "../interfaces/IAttestationVerifier.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 contract TEELivenessVerifier is OwnableUpgradeable {
@@ -22,12 +22,15 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         bytes32 proverAddressHash;
     }
 
+    error INVALID_REPORT();
+    error INVALID_REPORT_DATA();
+
     mapping(bytes32 => bool) public attestedReports;
     mapping(bytes32 => Prover) public attestedProvers; // prover's pubkey => attestedTime
 
     uint256 public attestValiditySeconds = 3600;
 
-    IAttestation public dcapAttestation;
+    IAttestationVerifier public attestationVerifier;
 
     // added at v2
     uint256 public maxBlockNumberDiff;
@@ -43,7 +46,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         uint256 _maxBlockNumberDiff,
         uint256 _attestValiditySeconds
     ) public initializer {
-        dcapAttestation = IAttestation(_attestationAddr);
+        attestationVerifier = IAttestationVerifier(_attestationAddr);
         maxBlockNumberDiff = _maxBlockNumberDiff;
         attestValiditySeconds = _attestValiditySeconds;
         _transferOwnership(_initialOwner);
@@ -56,7 +59,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         uint256 _maxBlockNumberDiff,
         uint256 _attestValiditySeconds
     ) public reinitializer(i) {
-        dcapAttestation = IAttestation(_attestationAddr);
+        attestationVerifier = IAttestationVerifier(_attestationAddr);
         maxBlockNumberDiff = _maxBlockNumberDiff;
         attestValiditySeconds = _attestValiditySeconds;
         _transferOwnership(_initialOwner);
@@ -69,7 +72,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
     }
 
     function changeAttestationImpl(address _attestationAddr) public onlyOwner {
-        dcapAttestation = IAttestation(_attestationAddr);
+        attestationVerifier = IAttestationVerifier(_attestationAddr);
     }
 
     function changeAttestValiditySeconds(uint256 val) public onlyOwner {
@@ -77,11 +80,11 @@ contract TEELivenessVerifier is OwnableUpgradeable {
     }
 
     function verifyMrEnclave(bytes32 _mrenclave) public view returns (bool) {
-        return dcapAttestation.verifyMrEnclave(_mrenclave);
+        return attestationVerifier.verifyMrEnclave(_mrenclave);
     }
 
     function verifyMrSigner(bytes32 _mrsigner) public view returns (bool) {
-        return dcapAttestation.verifyMrSigner(_mrsigner);
+        return attestationVerifier.verifyMrSigner(_mrsigner);
     }
 
     function submitLivenessProofV2(
@@ -91,9 +94,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         checkBlockNumber(_data.referenceBlockNumber, _data.referenceBlockHash);
         bytes32 dataHash = keccak256(abi.encode(_data));
 
-        (bool succ, bytes memory reportData) = dcapAttestation
-            .verifyAttestation(_report);
-        require(succ, "attestation report validation fail");
+        (bytes memory reportData) = attestationVerifier.verifyAttestation(_report);
 
         bytes32 reportHash = keccak256(_report);
         require(!attestedReports[reportHash], "report is already used");
@@ -135,12 +136,8 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         bytes32 pubkeyX,
         bytes32 pubkeyY,
         bytes calldata data
-    ) public view returns (bool) {
-        (bool succ, bytes memory reportData) = dcapAttestation
-            .verifyAttestation(data);
-        if (!succ) {
-            return false;
-        }
+    ) public returns (bool) {
+        bytes memory reportData = attestationVerifier.verifyAttestation(data);
 
         (bytes32 x, bytes32 y) = splitBytes64(reportData);
         if (x != pubkeyX || y != pubkeyY) {

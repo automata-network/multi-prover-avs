@@ -11,7 +11,7 @@ function _script() {
 	fi
 	cd $WORKDIR
 	# ETH_GAS_PRICE=0.1gwei
-	ENV=$ENV forge script "$@" -v $NOSEND --rpc-url $(_get_env RPC_URL) --private-key $(_get_env $DEPLOY_KEY_SUFFIX) --revert-strings debug
+	ENV=$ENV forge script "$@" -vvv $NOSEND --rpc-url $(_get_env RPC_URL) --private-key $(_get_env $DEPLOY_KEY_SUFFIX) $(_get_env VERIFY_CMD)
 	cd -
 }
 
