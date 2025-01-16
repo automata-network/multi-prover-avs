@@ -185,7 +185,7 @@ func (r *ELChainReader) ServiceManagerCanSlashOperatorUntilBlock(
 	operatorAddr gethcommon.Address,
 	serviceManagerAddr gethcommon.Address,
 ) (uint32, error) {
-	if r.slasher == nil {
+	if r.slasher == (*slasher.ContractISlasher)(nil) {
 		return 0, nil
 	}
 	serviceManagerCanSlashOperatorUntilBlock, err := r.slasher.ContractCanSlashOperatorUntilBlock(
@@ -198,7 +198,8 @@ func (r *ELChainReader) ServiceManagerCanSlashOperatorUntilBlock(
 }
 
 func (r *ELChainReader) OperatorIsFrozen(opts *bind.CallOpts, operatorAddr gethcommon.Address) (bool, error) {
-	if r.slasher == nil {
+	println(r.slasher, slasher.ContractISlasherCalls(nil))
+	if r.slasher == (*slasher.ContractISlasher)(nil) {
 		return false, nil
 	}
 	operatorIsFrozen, err := r.slasher.IsFrozen(opts, operatorAddr)
