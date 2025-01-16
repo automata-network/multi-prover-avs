@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 contract StackTokenTopup is Script {
+
     function setUp() public {}
 
     function run() public {
@@ -20,4 +21,5 @@ contract StackTokenTopup is Script {
         token.transfer(recipient, 32100000000000000000);
         vm.stopBroadcast();
     }
+
 }

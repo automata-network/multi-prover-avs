@@ -5,6 +5,7 @@ import {IAttestation} from "src/interfaces/IAttestation.sol";
 import {IAttestationVerifier} from "src/interfaces/IAttestationVerifier.sol";
 
 contract AttestationVerifier is IAttestationVerifier {
+
     IAttestation public dcapAttestation;
 
     constructor(address _attestationVerifierAddr) {
@@ -16,9 +17,13 @@ contract AttestationVerifier is IAttestationVerifier {
 
     function verifyAttestation(bytes calldata _report) public returns (bytes memory) {
         (bool succ, bytes memory output) = dcapAttestation.verifyAndAttestOnChain(_report);
-        if (!succ) revert INVALID_REPORT();
+        if (!succ) {
+            revert INVALID_REPORT();
+        }
 
-        if (output.length < 64) revert INVALID_REPORT_DATA();
+        if (output.length < 64) {
+            revert INVALID_REPORT_DATA();
+        }
 
         bytes memory reportData = new bytes(64);
         assembly {
@@ -30,11 +35,12 @@ contract AttestationVerifier is IAttestationVerifier {
         return reportData;
     }
 
-    function verifyMrEnclave(bytes32) view external returns (bool) {
+    function verifyMrEnclave(bytes32) external view returns (bool) {
         return true;
     }
 
-    function verifyMrSigner(bytes32) view external returns (bool) {
+    function verifyMrSigner(bytes32) external view returns (bool) {
         return true;
     }
+
 }

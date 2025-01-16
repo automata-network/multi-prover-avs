@@ -12,6 +12,7 @@ pragma solidity >=0.8.0;
  * See https://dev.risczero.com/api/blockchain-integration/bonsai-on-eth to learn more
  */
 interface IAttestation {
+
     /**
      * @notice full on-chain verification for an attestation
      * @dev must further specify the structure of inputs/outputs, to be serialized and passed to this method
@@ -38,4 +39,5 @@ interface IAttestation {
     function verifyAndAttestWithZKProof(bytes calldata journal, bytes calldata seal)
         external
         returns (bool success, bytes memory output);
+
 }

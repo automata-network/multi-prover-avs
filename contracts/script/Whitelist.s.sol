@@ -6,9 +6,9 @@ import {IMultiProverServiceManager} from "../src/interfaces/IMultiProverServiceM
 import "forge-std/Script.sol";
 
 contract Whitelist is Script {
+
     address serviceAddr = vm.envAddress("MULTI_PROVER_SERVICE_MANAGER");
     MultiProverServiceManager serviceManager = MultiProverServiceManager(serviceAddr);
-
 
     function add(address operator) public {
         vm.startBroadcast();
@@ -24,15 +24,15 @@ contract Whitelist is Script {
 
     function addQuorum(IMultiProverServiceManager.TEE teeType, uint8 quorumNumber) public {
         vm.startBroadcast();
-        IMultiProverServiceManager.TEEQuorum memory quorum = IMultiProverServiceManager.TEEQuorum({
-            teeType: teeType,
-            quorumNumber: quorumNumber
-        });
+        IMultiProverServiceManager.TEEQuorum memory quorum =
+            IMultiProverServiceManager.TEEQuorum({teeType: teeType, quorumNumber: quorumNumber});
         serviceManager.addTEEQuorum(quorum);
         vm.stopBroadcast();
     }
 
-    function addCommittee(uint256 id, string memory description, bytes memory metadata, bytes memory teeQuorumNumbers) public {
+    function addCommittee(uint256 id, string memory description, bytes memory metadata, bytes memory teeQuorumNumbers)
+        public
+    {
         vm.startBroadcast();
         IMultiProverServiceManager.Committee memory committee = IMultiProverServiceManager.Committee({
             id: id,
@@ -43,4 +43,5 @@ contract Whitelist is Script {
         serviceManager.addCommittee(committee);
         vm.stopBroadcast();
     }
+
 }

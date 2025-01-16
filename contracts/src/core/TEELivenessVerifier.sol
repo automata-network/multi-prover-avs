@@ -5,6 +5,7 @@ import {IAttestationVerifier} from "../interfaces/IAttestationVerifier.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 contract TEELivenessVerifier is OwnableUpgradeable {
+
     struct Pubkey {
         bytes32 x;
         bytes32 y;
@@ -65,9 +66,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         _transferOwnership(_initialOwner);
     }
 
-    function changeMaxBlockNumberDiff(
-        uint256 _maxBlockNumberDiff
-    ) public onlyOwner {
+    function changeMaxBlockNumberDiff(uint256 _maxBlockNumberDiff) public onlyOwner {
         maxBlockNumberDiff = _maxBlockNumberDiff;
     }
 
@@ -87,10 +86,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         return attestationVerifier.verifyMrSigner(_mrsigner);
     }
 
-    function submitLivenessProofV2(
-        ReportDataV2 calldata _data,
-        bytes calldata _report
-    ) public {
+    function submitLivenessProofV2(ReportDataV2 calldata _data, bytes calldata _report) public {
         checkBlockNumber(_data.referenceBlockNumber, _data.referenceBlockHash);
         bytes32 dataHash = keccak256(abi.encode(_data));
 
@@ -109,21 +105,12 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         attestedReports[reportHash] = true;
     }
 
-    function verifyLivenessProof(
-        bytes32 pubkeyX,
-        bytes32 pubkeyY
-    ) public view returns (bool) {
+    function verifyLivenessProof(bytes32 pubkeyX, bytes32 pubkeyY) public view returns (bool) {
         bytes32 signer = keccak256(abi.encode(pubkeyX, pubkeyY));
-        return
-            attestedProvers[signer].time + attestValiditySeconds >
-            block.timestamp;
+        return attestedProvers[signer].time + attestValiditySeconds > block.timestamp;
     }
 
-    function verifyLivenessProofV2(
-        bytes32 pubkeyX,
-        bytes32 pubkeyY,
-        address proverKey
-    ) public view returns (bool) {
+    function verifyLivenessProofV2(bytes32 pubkeyX, bytes32 pubkeyY, address proverKey) public view returns (bool) {
         bytes32 signer = keccak256(abi.encode(pubkeyX, pubkeyY));
         bool succ = attestedProvers[signer].time + attestValiditySeconds > block.timestamp;
         if (!succ) {
@@ -132,11 +119,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         return attestedProverAddr[signer] == proverKey;
     }
 
-    function verifyAttestationV2(
-        bytes32 pubkeyX,
-        bytes32 pubkeyY,
-        bytes calldata data
-    ) public returns (bool) {
+    function verifyAttestationV2(bytes32 pubkeyX, bytes32 pubkeyY, bytes calldata data) public returns (bool) {
         bytes memory reportData = attestationVerifier.verifyAttestation(data);
 
         (bytes32 x, bytes32 y) = splitBytes64(reportData);
@@ -147,9 +130,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         return true;
     }
 
-    function splitBytes64(
-        bytes memory b
-    ) private pure returns (bytes32, bytes32) {
+    function splitBytes64(bytes memory b) private pure returns (bytes32, bytes32) {
         require(b.length >= 64, "Bytes array too short");
 
         bytes32 x;
@@ -162,16 +143,11 @@ contract TEELivenessVerifier is OwnableUpgradeable {
     }
 
     // this function will make sure the attestation report generated in recent ${maxBlockNumberDiff} blocks
-    function checkBlockNumber(
-        uint256 blockNumber,
-        bytes32 blockHash
-    ) private view {
+    function checkBlockNumber(uint256 blockNumber, bytes32 blockHash) private view {
         require(blockNumber < block.number, "invalid block number");
-        require(
-            block.number - blockNumber < maxBlockNumberDiff,
-            "block number out-of-date"
-        );
+        require(block.number - blockNumber < maxBlockNumberDiff, "block number out-of-date");
 
         require(blockhash(blockNumber) == blockHash, "block number mismatch");
     }
+
 }

@@ -5,7 +5,9 @@ import {IMultiProverServiceManager} from "../src/interfaces/IMultiProverServiceM
 import "forge-std/Script.sol";
 
 contract TEEQuorumManagement is Script {
-    IMultiProverServiceManager serviceManager = IMultiProverServiceManager(vm.envAddress("MULTI_PROVER_SERVICE_MANAGER"));
+
+    IMultiProverServiceManager serviceManager =
+        IMultiProverServiceManager(vm.envAddress("MULTI_PROVER_SERVICE_MANAGER"));
 
     function run() public {
         addQuorum(IMultiProverServiceManager.TEE.INTEL_SGX, 0);
@@ -13,10 +15,8 @@ contract TEEQuorumManagement is Script {
 
     function addQuorum(IMultiProverServiceManager.TEE teeType, uint8 quorumNumber) public {
         vm.startBroadcast();
-        IMultiProverServiceManager.TEEQuorum memory quorum = IMultiProverServiceManager.TEEQuorum({
-            teeType: teeType,
-            quorumNumber: quorumNumber
-        });
+        IMultiProverServiceManager.TEEQuorum memory quorum =
+            IMultiProverServiceManager.TEEQuorum({teeType: teeType, quorumNumber: quorumNumber});
         serviceManager.addTEEQuorum(quorum);
         vm.stopBroadcast();
     }
@@ -26,4 +26,5 @@ contract TEEQuorumManagement is Script {
         serviceManager.removeTEEQuorum(quorumNumber);
         vm.stopBroadcast();
     }
+
 }

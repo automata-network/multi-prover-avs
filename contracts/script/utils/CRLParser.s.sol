@@ -9,6 +9,7 @@ import {X509DateUtils} from "@dcap-v3-attestation/utils/X509DateUtils.sol";
 import "forge-std/console.sol";
 
 contract CRLParser {
+
     using Asn1Decode for bytes;
     using NodePtr for uint256;
     using BytesUtils for bytes;
@@ -50,4 +51,5 @@ contract CRLParser {
 
         return revokedSerialNums;
     }
+
 }

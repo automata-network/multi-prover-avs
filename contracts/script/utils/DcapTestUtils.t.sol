@@ -10,6 +10,7 @@ import {JSONParserLib, LibString} from "solady/src/Milady.sol";
 import {Base64} from "solady/src/Milady.sol";
 
 contract DcapTestUtils {
+
     using JSONParserLib for JSONParserLib.Item;
     using LibString for string;
 
@@ -256,4 +257,5 @@ contract DcapTestUtils {
         (success, v3quote,) = V3Parser.parseInput(v3QuoteBytes, pemCertChainLib);
         require(success, "V3Quote bytes parse failed");
     }
+
 }

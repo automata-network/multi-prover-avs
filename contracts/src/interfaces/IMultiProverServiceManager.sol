@@ -5,14 +5,11 @@ import {IServiceManager} from "eigenlayer-middleware/interfaces/IServiceManager.
 import {BLSSignatureChecker} from "eigenlayer-middleware/BLSSignatureChecker.sol";
 
 interface IMultiProverServiceManager is IServiceManager {
+
     /**
      * @notice Emitted when a state is confirmed
      */
-    event StateConfirmed(
-        uint256 indexed committeeId,
-        bytes metadata,
-        bytes state
-    );
+    event StateConfirmed(uint256 indexed committeeId, bytes metadata, bytes state);
 
     /**
      * @notice Emitted when the state confirmer is updated
@@ -128,4 +125,5 @@ interface IMultiProverServiceManager is IServiceManager {
     function addTEEQuorum(TEEQuorum memory teeQuorum) external;
 
     function removeTEEQuorum(uint8 quorumNumber) external;
+
 }
