@@ -9,20 +9,11 @@ import {
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {EmptyContract} from "./utils/EmptyContract.sol";
-
-import "@dcap-v3-attestation/utils/SigVerifyLib.sol";
-import "@dcap-v3-attestation/lib/PEMCertChainLib.sol";
-import "@dcap-v3-attestation/AutomataDcapV3Attestation.sol";
-import "./utils/DcapTestUtils.t.sol";
 import {TEELivenessVerifier} from "../src/core/TEELivenessVerifier.sol";
 import {AttestationVerifier} from "../src/core/AttestationVerifier.sol";
-import "./utils/CRLParser.s.sol";
 
-contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
 
-    string internal constant defaultTcbInfoPath = "dcap-v3-attestation/contracts/assets/0923/tcbInfo.json";
-    string internal constant defaultTcbInfoDirPath = "dcap-v3-attestation/contracts/assets/latest/tcb_info/";
-    string internal constant defaultQeIdPath = "dcap-v3-attestation/contracts/assets/latest/identity.json";
+contract DeployTEELivenessVerifier is Script {
 
     function setUp() public {}
 
@@ -57,74 +48,6 @@ contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
     function saveJson(string memory json) private {
         string memory finalJson = vm.serializeString(json, "remark", "TEELivenessVerifier");
         vm.writeJson(finalJson, getOutputFilePath());
-    }
-
-    function deploySigVerifyLib() public {
-        vm.startBroadcast();
-        SigVerifyLib sigVerifyLib = new SigVerifyLib();
-        vm.stopBroadcast();
-
-        string memory output = readJson();
-        vm.serializeAddress(output, "SigVerifyLib", address(sigVerifyLib));
-        saveJson(output);
-    }
-
-    function deployPEMCertChainLib() public {
-        vm.startBroadcast();
-        PEMCertChainLib pemCertLib = new PEMCertChainLib();
-        vm.stopBroadcast();
-        string memory output = readJson();
-        vm.serializeAddress(output, "PEMCertChainLib", address(pemCertLib));
-        saveJson(output);
-    }
-
-    function updateAttestationConfig() public {
-        string memory output = readJson();
-        AutomataDcapV3Attestation attestation =
-            AutomataDcapV3Attestation(vm.parseJsonAddress(output, ".AutomataDcapV3Attestation"));
-        vm.startBroadcast();
-
-        {
-            VmSafe.DirEntry[] memory files = vm.readDir(defaultTcbInfoDirPath);
-            for (uint256 i = 0; i < files.length; i++) {
-                string memory tcbInfoJson = vm.readFile(files[i].path);
-                (bool tcbParsedSuccess, TCBInfoStruct.TCBInfo memory parsedTcbInfo) = parseTcbInfoJson(tcbInfoJson);
-                require(tcbParsedSuccess, "failed to parse tcb");
-                string memory fmspc = parsedTcbInfo.fmspc;
-                attestation.configureTcbInfoJson(fmspc, parsedTcbInfo);
-            }
-        }
-
-        {
-            string memory enclaveIdJson = vm.readFile(defaultQeIdPath);
-
-            (bool qeIdParsedSuccess, EnclaveIdStruct.EnclaveId memory parsedEnclaveId) =
-                parseEnclaveIdentityJson(enclaveIdJson);
-            require(qeIdParsedSuccess, "failed to parse qeID");
-
-            attestation.configureQeIdentityJson(parsedEnclaveId);
-        }
-        vm.stopBroadcast();
-    }
-
-    function deployAttestation() public {
-        string memory output = readJson();
-        vm.startBroadcast();
-        AutomataDcapV3Attestation attestation = new AutomataDcapV3Attestation(
-            vm.parseJsonAddress(output, ".SigVerifyLib"), vm.parseJsonAddress(output, ".PEMCertChainLib")
-        );
-        {
-            // CRLs are provided directly in the CRLParser.s.sol script in it's DER encoded form
-            bytes[] memory crl = decodeCrl(samplePckCrl);
-            attestation.addRevokedCertSerialNum(0, crl);
-        }
-        vm.stopBroadcast();
-
-        vm.serializeAddress(output, "AutomataDcapV3Attestation", address(attestation));
-        saveJson(output);
-
-        updateAttestationConfig();
-        verifyQuote();
     }
 
     function verifyQuote() public {
@@ -221,9 +144,6 @@ contract DeployTEELivenessVerifier is Script, DcapTestUtils, CRLParser {
     }
 
     function all() public {
-        deploySigVerifyLib();
-        deployPEMCertChainLib();
-        deployAttestation();
         deployProxyAdmin();
         deployVerifier();
     }

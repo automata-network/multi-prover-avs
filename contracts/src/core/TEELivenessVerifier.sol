@@ -86,11 +86,11 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         return attestationVerifier.verifyMrSigner(_mrsigner);
     }
 
-    function submitLivenessProofV2(ReportDataV2 calldata _data, bytes calldata _report) public {
+    function submitLivenessProofV2(ReportDataV2 calldata _data, bytes calldata _report) public payable {
         checkBlockNumber(_data.referenceBlockNumber, _data.referenceBlockHash);
         bytes32 dataHash = keccak256(abi.encode(_data));
 
-        (bytes memory reportData) = attestationVerifier.verifyAttestation(_report);
+        (bytes memory reportData) = attestationVerifier.verifyAttestation{value: msg.value}(_report);
 
         bytes32 reportHash = keccak256(_report);
         require(!attestedReports[reportHash], "report is already used");
@@ -148,6 +148,10 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         require(block.number - blockNumber < maxBlockNumberDiff, "block number out-of-date");
 
         require(blockhash(blockNumber) == blockHash, "block number mismatch");
+    }
+
+    function estimateBaseFeeVerifyOnChain(bytes calldata rawQuote) external payable returns (uint256) {
+        return attestationVerifier.estimateBaseFeeVerifyOnChain{value: msg.value}(rawQuote);
     }
 
 }

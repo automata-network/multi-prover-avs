@@ -14,6 +14,11 @@ pragma solidity >=0.8.0;
 interface IAttestation {
 
     /**
+     * @notice getter for the attestation's base price
+     */
+    function getBp() external view returns (uint16);
+
+    /**
      * @notice full on-chain verification for an attestation
      * @dev must further specify the structure of inputs/outputs, to be serialized and passed to this method
      * @param input - serialized raw input as defined by the project
@@ -22,22 +27,9 @@ interface IAttestation {
      * For verification failures, the output is simply a UTF-8 encoded string, describing the reason for failure.
      * @dev can directly type cast the failed output as a string
      */
-    function verifyAndAttestOnChain(bytes calldata input) external returns (bool success, bytes memory output);
-
-    /**
-     * @param journal - The output of the Guest program, this includes:
-     * - VerifiedOutput struct
-     * - TcbInfo hash
-     * - QEID hash
-     * - RootCA hash
-     * - TCB Signing CA hash
-     * - Root CRL hash
-     * - Platform CRL hash
-     * - Processor CRL hash
-     * @param seal - The encoded cryptographic proof (i.e. SNARK).
-     */
-    function verifyAndAttestWithZKProof(bytes calldata journal, bytes calldata seal)
+    function verifyAndAttestOnChain(bytes calldata input)
         external
+        payable
         returns (bool success, bytes memory output);
 
 }
