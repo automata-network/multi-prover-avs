@@ -15,3 +15,7 @@ optimizer_runs = 50
 via_ir = false
 # Override the Solidity version (this overrides `auto_detect_solc`)
 #solc_version = '0.8.12'
+
+[fmt]
+contract_new_lines = true
+single_line_statement_blocks = "multi"

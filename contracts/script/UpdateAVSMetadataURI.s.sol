@@ -5,6 +5,7 @@ import {IMultiProverServiceManager} from "../src/interfaces/IMultiProverServiceM
 import "forge-std/Script.sol";
 
 contract UpdateAVSMetadataURI is Script {
+
     function setUp() public {}
 
     function run() public {
@@ -15,4 +16,5 @@ contract UpdateAVSMetadataURI is Script {
         avs.updateAVSMetadataURI(metadataURI);
         vm.stopBroadcast();
     }
+
 }

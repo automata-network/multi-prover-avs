@@ -1,11 +1,12 @@
 {
+  "AttestationVerifier": "0xcb1585b68daCfD2676C129b93B8d9B06525af115",
   "AutomataDcapV3Attestation": "0x5669FE82711052e1A0EE16eafCDAb49ffe02ab14",
   "EmptyContract": "0x7e3DbA49f6B81C0d38C9D200C3f5199f9aBbb297",
   "PEMCertChainLib": "0xcBF7fc0D259C26AE0AFe0582bC5b4aBc812F42c9",
   "ProxyAdmin": "0x6E6320afAAE7F5Bede91a8c6565BB17AD55e26b0",
   "SigVerifyLib": "0xA0610354330FC8c490f2C77E7379d39A484692b5",
   "TEELivenessVerifier": "0x63AED86c0c6Df1e60E01AAF9bcD39ad5cD2e3344",
-  "TEELivenessVerifierImpl": "0x3e6D8FBB14026Fa18077EA2785EA5921C58D7A84",
+  "TEELivenessVerifierImpl": "0xC6D4fDe220a16D1C03DEF8fC72a99BD0f46Ecb18",
   "TEELivenessVerifierProxy": "0x2E8628F6000Ef85dea615af6Da4Fd6dF4fD149e6",
   "remark": "TEELivenessVerifier"
 }

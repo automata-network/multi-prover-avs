@@ -38,6 +38,7 @@ struct StrategyConfig {
 
 // forge script script/EigenLayerDeployer.s.sol --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 contract EigenLayerDeployer is Script {
+
     struct EigenLayerContracts {
         ProxyAdmin eigenLayerProxyAdmin;
         PauserRegistry eigenLayerPauserReg;
@@ -352,4 +353,5 @@ contract EigenLayerDeployer is Script {
         string memory finalJson = vm.serializeString(output, "object", output);
         vm.writeJson(finalJson, outputFilePath);
     }
+
 }

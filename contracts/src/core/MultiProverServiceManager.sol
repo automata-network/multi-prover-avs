@@ -13,7 +13,12 @@ import {IServiceManager} from "eigenlayer-middleware/interfaces/IServiceManager.
 
 import {MultiProverServiceManagerStorage} from "./MultiProverServiceManagerStorage.sol";
 
-contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceManagerBase, BLSSignatureChecker, Pausable {
+contract MultiProverServiceManager is
+    MultiProverServiceManagerStorage,
+    ServiceManagerBase,
+    BLSSignatureChecker,
+    Pausable
+{
 
     modifier onlyStateConfirmer() {
         if (msg.sender != stateConfirmer) {
@@ -66,11 +71,12 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
 
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) 
-        public 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    )
+        public
         override(ServiceManagerBase, IServiceManager)
         onlyWhenNotPaused(PAUSED_OPERTOR_REGISTRATION)
-        onlyRegistryCoordinator 
+        onlyRegistryCoordinator
     {
         if (poaEnabled && !operatorWhitelist[operator]) {
             revert NotWhitelisted();
@@ -78,11 +84,11 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
-    function deregisterOperatorFromAVS(address operator) 
-        public 
+    function deregisterOperatorFromAVS(address operator)
+        public
         override(ServiceManagerBase, IServiceManager)
         onlyWhenNotPaused(PAUSED_OPERTOR_REGISTRATION)
-        onlyRegistryCoordinator 
+        onlyRegistryCoordinator
     {
         _avsDirectory.deregisterOperatorFromAVS(operator);
     }
@@ -118,28 +124,28 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
 
         // check signatures
         // check the signature
-        (
-            QuorumStakeTotals memory quorumStakeTotals,
-            bytes32 signatoryRecordHash
-        ) = checkSignatures(
-            reducedStateHeaderHash, 
+        (QuorumStakeTotals memory quorumStakeTotals, bytes32 signatoryRecordHash) = checkSignatures(
+            reducedStateHeaderHash,
             stateHeader.quorumNumbers, // use list of uint8s instead of uint256 bitmap to not iterate 256 times
-            stateHeader.referenceBlockNumber, 
+            stateHeader.referenceBlockNumber,
             nonSignerStakesAndSignature
         );
 
         // check that signatories own at least a threshold percentage of each quourm
         for (uint256 i = 0; i < stateHeader.quorumThresholdPercentages.length; i++) {
             // we don't check that the quorumThresholdPercentages are not >100 because a greater value would trivially fail the check, implying signed stake > total stake
-            if (quorumStakeTotals.signedStakeForQuorum[i] * THRESHOLD_DENOMINATOR 
-                    < quorumStakeTotals.totalStakeForQuorum[i] * uint8(stateHeader.quorumThresholdPercentages[i])) {
+            if (
+                quorumStakeTotals.signedStakeForQuorum[i] * THRESHOLD_DENOMINATOR
+                    < quorumStakeTotals.totalStakeForQuorum[i] * uint8(stateHeader.quorumThresholdPercentages[i])
+            ) {
                 revert InsufficientThreshold();
             }
         }
 
         uint32 taskIdMemory = taskId;
         bytes32 stateHeaderHash = _hashStateHeader(stateHeader);
-        bytes32 taskMetadataHash = keccak256(abi.encodePacked(stateHeaderHash, signatoryRecordHash, uint32(block.number)));
+        bytes32 taskMetadataHash =
+            keccak256(abi.encodePacked(stateHeaderHash, signatoryRecordHash, uint32(block.number)));
         taskIdToMetadataHash[taskIdMemory] = taskMetadataHash;
 
         taskId = taskIdMemory + 1;
@@ -306,8 +312,10 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
         return keccak256(abi.encode(reducedStateHeader));
     }
 
-    function _convertStateHeaderToReducedStateHeader(StateHeader calldata stateHeader) internal pure 
-        returns (ReducedStateHeader memory) 
+    function _convertStateHeaderToReducedStateHeader(StateHeader calldata stateHeader)
+        internal
+        pure
+        returns (ReducedStateHeader memory)
     {
         return ReducedStateHeader({
             committeeId: stateHeader.committeeId,
@@ -316,4 +324,5 @@ contract MultiProverServiceManager is MultiProverServiceManagerStorage, ServiceM
             referenceBlockNumber: stateHeader.referenceBlockNumber
         });
     }
+
 }

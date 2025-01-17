@@ -46,14 +46,14 @@ func NewEigenlayerContractBindings(
 		return nil, types.WrapError(errors.New("Failed to create DelegationManager contract"), err)
 	}
 
-	slasherAddr, err := contractDelegationManager.Slasher(&bind.CallOpts{})
-	if err != nil {
-		return nil, types.WrapError(errors.New("Failed to fetch Slasher address"), err)
-	}
-	contractSlasher, err := slasher.NewContractISlasher(slasherAddr, ethclient)
-	if err != nil {
-		return nil, types.WrapError(errors.New("Failed to fetch Slasher contract"), err)
-	}
+	// slasherAddr, err := contractDelegationManager.Slasher(&bind.CallOpts{})
+	// if err != nil {
+	// 	return nil, types.WrapError(errors.New("Failed to fetch Slasher address"), err)
+	// }
+	// contractSlasher, err := slasher.NewContractISlasher(slasherAddr, ethclient)
+	// if err != nil {
+	// 	return nil, types.WrapError(errors.New("Failed to fetch Slasher contract"), err)
+	// }
 
 	strategyManagerAddr, err := contractDelegationManager.StrategyManager(&bind.CallOpts{})
 	if err != nil {
@@ -70,14 +70,14 @@ func NewEigenlayerContractBindings(
 	}
 
 	return &EigenlayerContractBindings{
-		SlasherAddr:           slasherAddr,
+		// SlasherAddr:           slasherAddr,
 		StrategyManagerAddr:   strategyManagerAddr,
 		DelegationManagerAddr: delegationManagerAddr,
 		AvsDirectoryAddr:      avsDirectoryAddr,
-		Slasher:               contractSlasher,
-		StrategyManager:       contractStrategyManager,
-		DelegationManager:     contractDelegationManager,
-		AvsDirectory:          avsDirectory,
+		// Slasher:               contractSlasher,
+		StrategyManager:   contractStrategyManager,
+		DelegationManager: contractDelegationManager,
+		AvsDirectory:      avsDirectory,
 	}, nil
 }
 

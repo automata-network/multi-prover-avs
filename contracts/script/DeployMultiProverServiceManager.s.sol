@@ -1,6 +1,9 @@
 pragma solidity ^0.8.12;
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy,
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -26,6 +29,7 @@ import {MultiProverServiceManager} from "../src/core/MultiProverServiceManager.s
 import "forge-std/Script.sol";
 
 contract DeployMultiProverServiceManager is Script {
+
     function setUp() public {}
 
     function run() public {
@@ -98,41 +102,43 @@ contract DeployMultiProverServiceManager is Script {
             IIndexRegistry indexRegistryImpl = new IndexRegistry(registryCoordinator);
             IBLSApkRegistry blsApkRegistryImpl = new BLSApkRegistry(registryCoordinator);
             address delegationManager = vm.envAddress("DELEGATION_MANAGER");
-            IStakeRegistry stakeRegistryImpl = new StakeRegistry(registryCoordinator, IDelegationManager(delegationManager));            
+            IStakeRegistry stakeRegistryImpl =
+                new StakeRegistry(registryCoordinator, IDelegationManager(delegationManager));
 
             proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(indexRegistry)), address(indexRegistryImpl));
             proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(blsApkRegistry)), address(blsApkRegistryImpl));
-            proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(stakeRegistry)), address(stakeRegistryImpl));            
-        }        
+            proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(stakeRegistry)), address(stakeRegistryImpl));
+        }
 
         IMultiProverServiceManager multiProverServiceManager = IMultiProverServiceManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
-        
+
         // Deploy registryCoordinator implementation and initialize
-        IRegistryCoordinator registryCoordinatorImpl = new RegistryCoordinator(multiProverServiceManager, stakeRegistry, blsApkRegistry, indexRegistry);              
+        IRegistryCoordinator registryCoordinatorImpl =
+            new RegistryCoordinator(multiProverServiceManager, stakeRegistry, blsApkRegistry, indexRegistry);
         {
             // Upgrade and initialize RegistryCoordinator
-            // Quorum config:                      
+            // Quorum config:
             //      - max 50 operator
             //      - minimum stake is 0.01 ETH/LST
             //      - 1.1 times the stake of original operators to kick it out
             //      - the stake of original stackers should be less than 5% of the total stake
-            IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams = new IRegistryCoordinator.OperatorSetParam[](1);
+            IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams =
+                new IRegistryCoordinator.OperatorSetParam[](1);
             operatorSetParams[0] = IRegistryCoordinator.OperatorSetParam(uint32(50), uint16(11000), uint16(200));
             uint96[] memory minimumStakeForQuourm = new uint96[](1);
             minimumStakeForQuourm[0] = uint96(10000000000000000);
-            IStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers = new IStakeRegistry.StrategyParams[][](1);
+            IStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers =
+                new IStakeRegistry.StrategyParams[][](1);
             {
                 // address strategyManager = vm.envAddress("STRATEGY_MANAGER");
                 // Same weight for all strategies
                 strategyAndWeightingMultipliers[0] = new IStakeRegistry.StrategyParams[](quorum0Strategies.length);
-                for (uint i = 0; i < quorum0Strategies.length; i++) {
+                for (uint256 i = 0; i < quorum0Strategies.length; i++) {
                     // StrategyBaseTVLLimits strategy = StrategyBaseTVLLimits(strategyManager);
-                    strategyAndWeightingMultipliers[0][i] = IStakeRegistry.StrategyParams({
-                        strategy: IStrategy(quorum0Strategies[i]),
-                        multiplier: 1 ether
-                    });
+                    strategyAndWeightingMultipliers[0][i] =
+                        IStakeRegistry.StrategyParams({strategy: IStrategy(quorum0Strategies[i]), multiplier: 1 ether});
                 }
             }
             bytes memory callData;
@@ -150,18 +156,17 @@ contract DeployMultiProverServiceManager is Script {
                 );
             }
             proxyAdmin.upgradeAndCall(
-                ITransparentUpgradeableProxy(address(registryCoordinator)), 
-                address(registryCoordinatorImpl),
-                callData
+                ITransparentUpgradeableProxy(address(registryCoordinator)), address(registryCoordinatorImpl), callData
             );
         }
 
         // Upgrade and initialize MultiProverServiceManager
         {
             address avsDirectory = vm.envAddress("AVS_DIRECTORY");
-            IMultiProverServiceManager multiProverServiceManagerImpl = new MultiProverServiceManager(IAVSDirectory(avsDirectory), registryCoordinator, stakeRegistry);
+            IMultiProverServiceManager multiProverServiceManagerImpl =
+                new MultiProverServiceManager(IAVSDirectory(avsDirectory), registryCoordinator, stakeRegistry);
             proxyAdmin.upgradeAndCall(
-                ITransparentUpgradeableProxy(address(multiProverServiceManager)), 
+                ITransparentUpgradeableProxy(address(multiProverServiceManager)),
                 address(multiProverServiceManagerImpl),
                 abi.encodeWithSelector(
                     MultiProverServiceManager.initialize.selector,
@@ -171,7 +176,7 @@ contract DeployMultiProverServiceManager is Script {
                     msg.sender,
                     msg.sender,
                     msg.sender,
-                    true    // Enable PoA
+                    true // Enable PoA
                 )
             );
         }
@@ -192,4 +197,5 @@ contract DeployMultiProverServiceManager is Script {
         string memory finalJson = vm.serializeString(output, "object", output);
         vm.writeJson(finalJson, outputFilePath);
     }
+
 }

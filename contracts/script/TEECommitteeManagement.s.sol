@@ -9,10 +9,9 @@ import {RegistryCoordinator} from "eigenlayer-middleware/RegistryCoordinator.sol
 import "forge-std/Script.sol";
 
 contract TEECommitteeManagement is Script {
+
     IMultiProverServiceManager serviceManager =
-        IMultiProverServiceManager(
-            vm.envAddress("MULTI_PROVER_SERVICE_MANAGER")
-        );
+        IMultiProverServiceManager(vm.envAddress("MULTI_PROVER_SERVICE_MANAGER"));
 
     function run() public {
         uint256 id = 1;
@@ -30,32 +29,25 @@ contract TEECommitteeManagement is Script {
         bytes memory teeQuorumNumbers = new bytes(1);
         teeQuorumNumbers[0] = bytes1(uint8(1));
 
-
         vm.startBroadcast();
-        IMultiProverServiceManager.TEEQuorum memory teeQuorum = IMultiProverServiceManager.TEEQuorum({
-            teeType: IMultiProverServiceManager.TEE.INTEL_SGX,
-            quorumNumber: 1
-        });
+        IMultiProverServiceManager.TEEQuorum memory teeQuorum =
+            IMultiProverServiceManager.TEEQuorum({teeType: IMultiProverServiceManager.TEE.INTEL_SGX, quorumNumber: 1});
         serviceManager.addTEEQuorum(teeQuorum);
         vm.stopBroadcast();
-        
+
         addCommittee(id, description, metadata, teeQuorumNumbers);
     }
 
-    function addCommittee(
-        uint256 id,
-        string memory description,
-        bytes memory metadata,
-        bytes memory teeQuorumNumbers
-    ) public {
+    function addCommittee(uint256 id, string memory description, bytes memory metadata, bytes memory teeQuorumNumbers)
+        public
+    {
         vm.startBroadcast();
-        IMultiProverServiceManager.Committee
-            memory committee = IMultiProverServiceManager.Committee({
-                id: id,
-                description: description,
-                metadata: metadata,
-                teeQuorumNumbers: teeQuorumNumbers
-            });
+        IMultiProverServiceManager.Committee memory committee = IMultiProverServiceManager.Committee({
+            id: id,
+            description: description,
+            metadata: metadata,
+            teeQuorumNumbers: teeQuorumNumbers
+        });
         serviceManager.addCommittee(committee);
         vm.stopBroadcast();
     }
@@ -67,13 +59,12 @@ contract TEECommitteeManagement is Script {
         bytes memory teeQuorumNumbers
     ) public {
         vm.startBroadcast();
-        IMultiProverServiceManager.Committee
-            memory committee = IMultiProverServiceManager.Committee({
-                id: id,
-                description: description,
-                metadata: metadata,
-                teeQuorumNumbers: teeQuorumNumbers
-            });
+        IMultiProverServiceManager.Committee memory committee = IMultiProverServiceManager.Committee({
+            id: id,
+            description: description,
+            metadata: metadata,
+            teeQuorumNumbers: teeQuorumNumbers
+        });
         serviceManager.updateCommittee(committee);
         vm.stopBroadcast();
     }
@@ -101,64 +92,43 @@ contract TEECommitteeManagement is Script {
             strategies[9] = 0x7673a47463F80c6a3553Db9E54c8cDcd5313d0ac; // ankrETH strategy
             strategies[10] = 0x80528D6e9A2BAbFc766965E0E26d5aB08D9CFaF9; // WETH strategy
         }
-        IStakeRegistry.StrategyParams[]
-            memory strategyParams = new IStakeRegistry.StrategyParams[](11);
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](11);
         {
-            for (uint i = 0; i < strategies.length; i++) {
-                strategyParams[i] = IStakeRegistry.StrategyParams({
-                    strategy: IStrategy(strategies[i]),
-                    multiplier: 1 ether
-                });
+            for (uint256 i = 0; i < strategies.length; i++) {
+                strategyParams[i] =
+                    IStakeRegistry.StrategyParams({strategy: IStrategy(strategies[i]), multiplier: 1 ether});
             }
         }
 
         uint96 minimumStakeForQuourm = 10000000000000000;
-        IRegistryCoordinator.OperatorSetParam
-            memory operatorSetParams = IRegistryCoordinator.OperatorSetParam(
-                uint32(100),
-                uint16(11000),
-                uint16(100)
-            );
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams =
+            IRegistryCoordinator.OperatorSetParam(uint32(100), uint16(11000), uint16(100));
 
         string memory output = readJson();
-        RegistryCoordinator registryCoordinator = RegistryCoordinator(
-            vm.parseJsonAddress(output, ".registryCoordinator")
-        );
+        RegistryCoordinator registryCoordinator =
+            RegistryCoordinator(vm.parseJsonAddress(output, ".registryCoordinator"));
 
-        registryCoordinator.createQuorum(
-            operatorSetParams,
-            minimumStakeForQuourm,
-            strategyParams
-        );
+        registryCoordinator.createQuorum(operatorSetParams, minimumStakeForQuourm, strategyParams);
         vm.stopBroadcast();
     }
 
     function getOutputFilePath() private view returns (string memory) {
         string memory env = vm.envString("ENV");
-        return
-            string.concat(
-                vm.projectRoot(),
-                "/script/output/avs_deploy_",
-                env,
-                ".json"
-            );
+        return string.concat(vm.projectRoot(), "/script/output/avs_deploy_", env, ".json");
     }
 
     function readJson() private returns (string memory) {
         bytes32 remark = keccak256(abi.encodePacked("remark"));
         string memory output = vm.readFile(getOutputFilePath());
         string[] memory keys = vm.parseJsonKeys(output, ".");
-        for (uint i = 0; i < keys.length; i++) {
+        for (uint256 i = 0; i < keys.length; i++) {
             if (keccak256(abi.encodePacked(keys[i])) == remark) {
                 continue;
             }
             string memory keyPath = string(abi.encodePacked(".", keys[i]));
-            vm.serializeAddress(
-                output,
-                keys[i],
-                vm.parseJsonAddress(output, keyPath)
-            );
+            vm.serializeAddress(output, keys[i], vm.parseJsonAddress(output, keyPath));
         }
         return output;
     }
+
 }

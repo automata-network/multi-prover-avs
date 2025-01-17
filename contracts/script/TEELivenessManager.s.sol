@@ -4,6 +4,7 @@ import "forge-std/Script.sol";
 import {TEELivenessVerifier} from "../src/core/TEELivenessVerifier.sol";
 
 contract TEELivenessManager is Script {
+
     address serviceAddr = vm.envAddress("TEE_LIVENESS");
     TEELivenessVerifier liveness = TEELivenessVerifier(serviceAddr);
 
@@ -29,4 +30,5 @@ contract TEELivenessManager is Script {
         vm.startBroadcast();
         liveness.submitLivenessProofV2(reportData, quote);
     }
+
 }
