@@ -521,7 +521,7 @@ func (o *Operator) registerAttestationReport(ctx context.Context, pubkeyBytes []
 		}
 		logex.Infof("attestation report data: 0x%x", report)
 		return logex.Trace(
-			err,
+			bindings.MultiProverError(err),
 			fmt.Sprintf("balance:%.2f", utils.WeiToF64(balance, 18)),
 			fmt.Sprintf("verifierAddr:%v", o.cfg.Config.TEELivenessVerifierAddress),
 		)

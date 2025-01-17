@@ -25,6 +25,7 @@ contract TEELivenessVerifier is OwnableUpgradeable {
 
     error INVALID_REPORT();
     error INVALID_REPORT_DATA();
+    error REPORT_DATA_MISMATCH(bytes);
 
     mapping(bytes32 => bool) public attestedReports;
     mapping(bytes32 => Prover) public attestedProvers; // prover's pubkey => attestedTime
@@ -96,7 +97,9 @@ contract TEELivenessVerifier is OwnableUpgradeable {
         require(!attestedReports[reportHash], "report is already used");
 
         (bytes32 proverBytes, bytes32 reportDataHash) = splitBytes64(reportData);
-        require(dataHash == reportDataHash, "report data hash mismatch");
+        if (dataHash != reportDataHash) {
+            revert REPORT_DATA_MISMATCH(reportData);
+        }
 
         Prover memory prover = Prover(_data.pubkey, block.timestamp);
         bytes32 proverKey = keccak256(abi.encode(_data.pubkey.x, _data.pubkey.y));

@@ -25,23 +25,28 @@ contract AttestationVerifier is IAttestationVerifier {
             revert INVALID_REPORT_DATA();
         }
 
-        // Extract the TEE type from the attestation output
+        // tee = output[2:6]
         bytes4 tee;
-        bytes memory reportData = new bytes(64);
         assembly {
             let start := add(add(output, 0x20), 2)
             tee := mload(start)
-            switch tee
-            case 0x00000000 {
-                // sgx, reportData = output[333:397]
-                start := add(add(output, 0x20), 333) // 13 + 384 - 64
+        }
+
+        bytes memory reportData = new bytes(64);
+        if (tee == 0x00000000) {
+            // sgx, reportData = output[333:397]
+            assembly {
+                let start := add(add(output, 0x20), 333) // 13 + 384 - 64
+                mstore(add(reportData, 0x20), mload(start))
+                mstore(add(reportData, 0x40), mload(add(start, 32)))
             }
-            default {
-                // tdx, reportData = output[533:597]
-                start := add(add(output, 0x20), 533) // 13 + 584 - 64
+        } else {
+            // tdx, reportData = output[533:597]
+            assembly {
+                let start := add(add(output, 0x20), 533) // 13 + 584 - 64
+                mstore(add(reportData, 0x20), mload(start))
+                mstore(add(reportData, 0x40), mload(add(start, 32)))
             }
-            mstore(add(reportData, 0x20), mload(start))
-            mstore(add(reportData, 0x40), mload(add(start, 32)))
         }
         return reportData;
     }
