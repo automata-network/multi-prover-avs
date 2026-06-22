@@ -6,6 +6,11 @@ import {IAttestationVerifier} from "../interfaces/IAttestationVerifier.sol";
 
 contract AttestationVerifier is IAttestationVerifier {
 
+    bytes4 private constant SGX_TEE_TYPE = 0x00000000;
+    uint256 private constant SGX_QUOTE_ATTRIBUTES_OFFSET = 96;
+    uint256 private constant SGX_QUOTE_ATTRIBUTES_SIZE = 16;
+    uint8 private constant SGX_DEBUG_FLAG = 0x02;
+
     IAttestation public dcapAttestation;
 
     constructor(address _attestationVerifierAddr) {
@@ -14,6 +19,7 @@ contract AttestationVerifier is IAttestationVerifier {
 
     error INVALID_REPORT();
     error INVALID_REPORT_DATA();
+    error DEBUG_ENCLAVE_NOT_ALLOWED();
 
     function verifyAttestation(bytes calldata _report) public payable returns (bytes memory) {
         (bool succ, bytes memory output) = dcapAttestation.verifyAndAttestOnChain{value: msg.value}(_report);
@@ -30,6 +36,10 @@ contract AttestationVerifier is IAttestationVerifier {
         assembly {
             let start := add(add(output, 0x20), 2)
             tee := mload(start)
+        }
+
+        if (tee == SGX_TEE_TYPE) {
+            _validateSgxQuote(_report);
         }
 
         bytes memory reportData = new bytes(64);
@@ -49,6 +59,16 @@ contract AttestationVerifier is IAttestationVerifier {
             }
         }
         return reportData;
+    }
+
+    function _validateSgxQuote(bytes calldata quote) private pure {
+        if (quote.length < SGX_QUOTE_ATTRIBUTES_OFFSET + SGX_QUOTE_ATTRIBUTES_SIZE) {
+            revert INVALID_REPORT_DATA();
+        }
+
+        if (uint8(quote[SGX_QUOTE_ATTRIBUTES_OFFSET]) & SGX_DEBUG_FLAG != 0) {
+            revert DEBUG_ENCLAVE_NOT_ALLOWED();
+        }
     }
 
     function verifyMrEnclave(bytes32) external view returns (bool) {
